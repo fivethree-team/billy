@@ -1,0 +1,38 @@
+{
+  "name": "@fivethree/billy-core",
+  "version": "0.1.0",
+  "description": "cli plugin system core.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node_modules/.bin/tsc -p .",
+    "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "test": "npm i -g && billy",
+    "refresh": "rm -rf ./node_modules ./package-lock.json && npm install"
+  },
+  "keywords": [
+    "typescript",
+    "cli",
+    "node",
+    "terminal"
+  ],
+  "author": "garygrossgarten",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chalk": "^2.2.0",
+    "@types/figlet": "^1.2.0",
+    "@types/inquirer": "0.0.43",
+    "@types/node": "^10.12.18",
+    "nodemon": "^1.18.9",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "clear": "^0.1.0",
+    "commander": "^2.19.0",
+    "figlet": "^1.2.1",
+    "inquirer": "^6.2.1",
+    "typescript-ioc": "^1.2.4"
+  },
+  "publisher": "fivethree"
+}
