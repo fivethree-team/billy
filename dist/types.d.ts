@@ -15,6 +15,7 @@ export interface LaneType {
     name: string;
     description: string;
     lane: Function;
+    args?: any[];
 }
 export interface LaneContext {
     lane: LaneType;

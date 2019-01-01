@@ -22,7 +22,7 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const commander = require('commander');
-const clear = require('clear');
+// const clear = require('clear');
 const path = require('path');
 const appProvider = {
     get: () => { return new Application(); }
@@ -71,10 +71,9 @@ let Application = class Application {
         const temp = [];
         plugins
             .forEach((plugin) => {
-            const p = require(`${this.appDir}/../node_modules/` + plugin).default;
-            const actions = p['actions'];
-            const name = p['name'];
-            temp.push({ name: name, actions: actions });
+            const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
+            console.log(p);
+            temp.push(p);
         });
         return temp;
     }
@@ -98,7 +97,7 @@ let Application = class Application {
     }
     presentLanes() {
         return __awaiter(this, void 0, void 0, function* () {
-            clear();
+            // clear();
             const answer = yield inquirer.prompt([
                 {
                     type: 'list',
@@ -117,7 +116,7 @@ let Application = class Application {
     takeLane(lane) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(chalk.green(`taking lane ${lane.name}`));
-            yield lane.lane(this.getLaneContext(lane));
+            yield lane.lane(this.getLaneContext(lane), lane.args);
         });
     }
     takeMultiple(lanes) {
@@ -143,6 +142,8 @@ let Application = class Application {
         const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
         actions
             .forEach(action => context[action.name] = action.action);
+        this.lanes
+            .forEach(lane => context[lane.name] = lane.lane);
         return context;
     }
 };

@@ -5,7 +5,7 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const commander = require('commander');
-const clear = require('clear');
+// const clear = require('clear');
 const path = require('path');
 
 
@@ -59,11 +59,9 @@ export class Application {
         const temp: PluginType[] = [];
         plugins
             .forEach((plugin: string) => {
-                const p = require(`${this.appDir}/../node_modules/` + plugin).default
-                const actions: ActionType[] = p['actions'];
-                const name = p['name'];
-
-                temp.push({ name: name, actions: actions });
+                const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
+                console.log(p);
+                temp.push(p);
             });
         return temp;
     }
@@ -93,7 +91,7 @@ export class Application {
     }
 
     async presentLanes() {
-        clear();
+        // clear();
         const answer = await inquirer.prompt([
             {
                 type: 'list',
@@ -111,7 +109,7 @@ export class Application {
 
     async takeLane(lane: LaneType) {
         console.log(chalk.green(`taking lane ${lane.name}`));
-        await lane.lane(this.getLaneContext(lane));
+        await lane.lane(this.getLaneContext(lane), lane.args);
     }
 
     async takeMultiple(lanes: LaneType[]) {
@@ -135,6 +133,8 @@ export class Application {
         const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
         actions
             .forEach(action => context[action.name] = action.action);
+        this.lanes
+            .forEach(lane => context[lane.name] = lane.lane);
 
         return context;
     }
@@ -160,7 +160,7 @@ export class Decorators {
 
     AppDecorator() {
 
-        return (target: Function) => {
+        return (target) => {
             //this is called once the app is done loading
             this.app.run();
         }
@@ -170,11 +170,11 @@ export class Decorators {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
             const lanes: LaneType[] = this.app.lanes;
             lanes.push({ name: propertyKey, description: description, lane: target[propertyKey] });
-
         }
     }
 
     PluginDecorator(name: string) {
+
         return (target: Function) => {
             target.prototype['name'] = name;
         }

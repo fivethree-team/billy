@@ -11,7 +11,7 @@ export interface PluginType {
 
 export interface ActionType {
     name: string;
-    key:string;
+    key: string;
     action: Function;
 }
 
@@ -19,6 +19,7 @@ export interface LaneType {
     name: string;
     description: string;
     lane: Function;
+    args?: any[];
 }
 
 export interface LaneContext {
