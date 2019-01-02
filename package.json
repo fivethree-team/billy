@@ -1,6 +1,6 @@
 {
     "name": "@fivethree/billy-core",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "description": "cli plugin system core.",
     "main": "dist/index.js",
     "scripts": {
