@@ -48,7 +48,6 @@ let Application = class Application {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('environment', process.env);
             if (this.fileExists(`${this.appDir}/../plugins.json`)) {
                 const params = this.getParamLanes();
                 if (params.length === 0) {
