@@ -132,7 +132,7 @@ export class Application {
         }
         const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
         actions
-            .forEach(action => context[action.name] = action.action);
+            .forEach(action => context[action.key] = action.action);
         this.lanes
             .forEach(lane => context[lane.name] = lane.lane);
 
@@ -180,10 +180,10 @@ export class Decorators {
         }
     }
 
-    ActionDecorator(name: string) {
+    ActionDecorator(description: string) {
         return function (target: Object, propertyKey: string, descriptor: PropertyDescriptor) {
             const actions: ActionType[] = target['actions'] || [];
-            actions.push({ name: name, key: propertyKey, action: target[propertyKey] })
+            actions.push({ description: description, key: propertyKey, action: target[propertyKey] })
             target['actions'] = actions;
         }
     }

@@ -25,5 +25,5 @@ export declare class Decorators {
     AppDecorator(): (target: any) => void;
     LaneDecorator(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
     PluginDecorator(name: string): (target: Function) => void;
-    ActionDecorator(name: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
+    ActionDecorator(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 }

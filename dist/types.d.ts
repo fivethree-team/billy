@@ -7,7 +7,7 @@ export interface PluginType {
     actions: ActionType[];
 }
 export interface ActionType {
-    name: string;
+    description: string;
     key: string;
     action: Function;
 }

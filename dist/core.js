@@ -141,7 +141,7 @@ let Application = class Application {
         };
         const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
         actions
-            .forEach(action => context[action.name] = action.action);
+            .forEach(action => context[action.key] = action.action);
         this.lanes
             .forEach(lane => context[lane.name] = lane.lane);
         return context;
@@ -187,10 +187,10 @@ let Decorators = class Decorators {
             target.prototype['name'] = name;
         };
     }
-    ActionDecorator(name) {
+    ActionDecorator(description) {
         return function (target, propertyKey, descriptor) {
             const actions = target['actions'] || [];
-            actions.push({ name: name, key: propertyKey, action: target[propertyKey] });
+            actions.push({ description: description, key: propertyKey, action: target[propertyKey] });
             target['actions'] = actions;
         };
     }
