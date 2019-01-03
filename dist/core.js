@@ -18,6 +18,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_ioc_1 = require("typescript-ioc");
+require('dotenv').config();
 const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
@@ -47,6 +48,7 @@ let Application = class Application {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log('environment', process.env);
             if (this.fileExists(`${this.appDir}/../plugins.json`)) {
                 const params = this.getParamLanes();
                 if (params.length === 0) {
@@ -72,7 +74,6 @@ let Application = class Application {
         plugins
             .forEach((plugin) => {
             const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
-            console.log(p);
             temp.push(p);
         });
         return temp;

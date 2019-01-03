@@ -1,5 +1,6 @@
 import { ActionType, Pluginfile, PluginType, LaneType, LaneContext } from './types';
 import { Provided, Provider, Singleton, Inject } from 'typescript-ioc';
+require('dotenv').config();
 
 const fs = require('fs');
 const inquirer = require('inquirer');
@@ -60,7 +61,6 @@ export class Application {
         plugins
             .forEach((plugin: string) => {
                 const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
-                console.log(p);
                 temp.push(p);
             });
         return temp;
