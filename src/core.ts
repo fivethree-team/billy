@@ -1,4 +1,4 @@
-import { ActionType, Pluginfile, PluginType, LaneType, LaneContext } from './types';
+import { ActionType, Pluginfile, PluginType, LaneType, LaneContext, JobType, HookType, HookName } from './types';
 import { Provided, Provider, Singleton, Inject } from 'typescript-ioc';
 require('dotenv').config();
 
@@ -8,6 +8,8 @@ const chalk = require('chalk');
 const commander = require('commander');
 // const clear = require('clear');
 const path = require('path');
+const scheduler = require('node-schedule');
+
 
 
 const appProvider: Provider = {
@@ -19,6 +21,8 @@ const appProvider: Provider = {
 export class Application {
     plugins: PluginType[] = [];
     lanes: LaneType[] = [];
+    jobs: JobType[] = [];
+    hooks: HookType[] = [];
     appDir = path.dirname(require.main.filename);
 
     constructor() {
@@ -104,23 +108,41 @@ export class Application {
                 })
             }
         ]);
-        this.takeLane(answer.lane);
+
+        await this.runHook('BEFORE_ALL', answer.lane);
+
+        await this.takeLane(answer.lane);
+
+        await this.runHook('AFTER_ALL', answer.lane);
     }
 
-    async takeLane(lane: LaneType) {
-        console.log(chalk.green(`taking lane ${lane.name}`));
-        await lane.lane(this.getLaneContext(lane), lane.args);
+    async takeLane(lane: LaneType, ...args) {
+        try {
+            await this.runHook('BEFORE_EACH', lane);
+            console.log(chalk.green(`taking lane ${lane.name}`));
+            const ret = await lane.lane(this.getLaneContext(lane), ...args);
+            await this.runHook('AFTER_EACH', lane);
+            return ret;
+        } catch (err) {
+            const errorHook = this.hooks.find(hook => hook.name === 'ERROR');
+            if (errorHook) {
+                await errorHook.lane.lane(err, this.getLaneContext(lane), ...args);
+            }
+            throw new Error(err.message || err);
+        }
     }
 
     async takeMultiple(lanes: LaneType[]) {
-        await this.processLanes(lanes, async (lane) => {
+        await this.runHook('BEFORE_ALL', lanes[0]);
+        await this.processAsyncArray(lanes, async (lane) => {
             await this.takeLane(lane);
         })
+        await this.runHook('AFTER_ALL', lanes[lanes.length - 1]);
     }
 
-    async processLanes(lanes: LaneType[], asyncFunc) {
-        for (const lane of lanes) {
-            await asyncFunc(lane);
+    async processAsyncArray(array: any[], asyncFunc) {
+        for (const el of array) {
+            await asyncFunc(el);
         };
     }
 
@@ -134,9 +156,44 @@ export class Application {
         actions
             .forEach(action => context[action.key] = action.action);
         this.lanes
-            .forEach(lane => context[lane.name] = lane.lane);
+            .forEach(l => {
+                const lane = async (context: LaneContext, ...args) => {
+                    return await this.takeLane(l, ...args)
+                }
+                context[l.name] = lane;
+            });
 
         return context;
+    }
+
+    async runHook(hookName: HookName, lane: LaneType) {
+        const hooks = this.hooks.filter(hook => hook.name === hookName);
+        if (hooks.length > 0) {
+            await this.processAsyncArray(hooks, async (hook: HookType) => {
+                await hook.lane.lane(this.getLaneContext(lane));
+            })
+        }
+    }
+
+    schedule(): JobType[] {
+        this.jobs
+            .forEach(job => {
+                console.log('schedule job', job.name)
+                const instance = scheduler.scheduleJob(job.schedule, (fireDate) => {
+                    console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
+                    this.takeLane(job.lane)
+                });
+                job.scheduler = instance;
+            });
+        console.log('all jobs', this.jobs);
+        return this.jobs;
+    }
+
+    cancelScheduled() {
+        this.jobs
+            .forEach(job => {
+                job.scheduler.cancel();
+            });
     }
 }
 
@@ -146,6 +203,14 @@ export function App() {
 export function Lane(description: string) {
     return new Decorators().LaneDecorator(description);
 }
+
+export function Scheduled(schedule: string | any) {
+    return new Decorators().ScheduledDecorator(schedule);
+}
+export function Hook(hook: HookName) {
+    return new Decorators().HookDecorator(hook);
+}
+
 export function Plugin(name: string) {
     return new Decorators().PluginDecorator(name);
 }
@@ -170,6 +235,20 @@ export class Decorators {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
             const lanes: LaneType[] = this.app.lanes;
             lanes.push({ name: propertyKey, description: description, lane: target[propertyKey] });
+        }
+    }
+
+    ScheduledDecorator(schedule: string | any) {
+        return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
+            const job: JobType = { name: propertyKey, lane: { name: propertyKey, description: null, lane: target[propertyKey] }, schedule: schedule, scheduler: null }
+            this.app.jobs.push(job);
+        }
+    }
+
+    HookDecorator(name: HookName) {
+        return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
+            const hook: HookType = { name: name, lane: { name: propertyKey, description: null, lane: target[propertyKey] } }
+            this.app.hooks.push(hook);
         }
     }
 
