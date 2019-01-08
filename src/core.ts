@@ -213,7 +213,6 @@ export class Decorators {
     PluginDecorator(name: string) {
 
         return (target: Function) => {
-            console.log('Plugin name', target.name);
         }
     }
 
