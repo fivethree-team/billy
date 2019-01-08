@@ -215,6 +215,7 @@ let Decorators = class Decorators {
     }
     PluginDecorator(name) {
         return (target) => {
+            console.log('Plugin name', target.name);
         };
     }
     ActionDecorator(description) {

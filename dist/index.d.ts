@@ -1,3 +1,3 @@
 export * from './core';
 export * from './types';
-export * from 'typescript-mix';
+export { use as usesPlugins } from 'typescript-mix';

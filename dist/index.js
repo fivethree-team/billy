@@ -4,4 +4,5 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./core"));
-__export(require("typescript-mix"));
+var typescript_mix_1 = require("typescript-mix");
+exports.usesPlugins = typescript_mix_1.use;
