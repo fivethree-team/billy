@@ -1,19 +1,4 @@
-import { Application } from './core';
-
-export interface Pluginfile {
-    plugins: string[]
-}
-
-export interface PluginType {
-    name: string;
-    actions: ActionType[];
-}
-
-export interface ActionType {
-    description: string;
-    key: string;
-    action: Function;
-}
+import { Core } from './core';
 
 export interface LaneType {
     name: string;
@@ -38,6 +23,5 @@ export type HookName = 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'A
 
 export interface LaneContext {
     lane: LaneType,
-    app: Application
-    [action: string]: any;
+    app: Core
 }

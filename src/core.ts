@@ -1,4 +1,4 @@
-import { ActionType, Pluginfile, PluginType, LaneType, LaneContext, JobType, HookType, HookName } from './types';
+import { LaneType, LaneContext, JobType, HookType, HookName } from './types';
 import { Provided, Provider, Singleton, Inject } from 'typescript-ioc';
 require('dotenv').config();
 
@@ -6,68 +6,35 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const commander = require('commander');
-// const clear = require('clear');
 const path = require('path');
 const scheduler = require('node-schedule');
 
 
-
 const appProvider: Provider = {
-    get: () => { return new Application(); }
+    get: () => { return new Core(); }
 };
 
 @Provided(appProvider)
 @Singleton
-export class Application {
-    plugins: PluginType[] = [];
+export class Core {
     lanes: LaneType[] = [];
     jobs: JobType[] = [];
     hooks: HookType[] = [];
     appDir = path.dirname(require.main.filename);
-
-    constructor() {
-        this.load();
-    }
-
-    async load() {
-        if (this.fileExists(`${this.appDir}/../plugins.json`)) {
-            const file: Pluginfile = this.parseJSON(`${this.appDir}/../plugins.json`);
-            this.plugins = this.loadPlugins(file.plugins);
-        } else {
-            console.error('no pluginfile found');
-        }
-    }
+    instance: any;
 
     async run() {
-        if (this.fileExists(`${this.appDir}/../plugins.json`)) {
-            const params = this.getParamLanes();
-            if (params.length === 0) {
-                await this.presentLanes();
-            } else {
-                await this.takeMultiple(params);
-            }
+        const params = this.getParamLanes();
+        if (params.length === 0) {
+            await this.presentLanes();
         } else {
-            console.log('no pluginfile found, aborting');
+            await this.takeMultiple(params);
         }
 
-    }
-
-    private fileExists(path): boolean {
-        return fs.existsSync(path);
     }
 
     private parseJSON(path): any {
         return JSON.parse(fs.readFileSync(path, 'utf8'));
-    }
-
-    private loadPlugins(plugins: string[]): PluginType[] {
-        const temp: PluginType[] = [];
-        plugins
-            .forEach((plugin: string) => {
-                const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
-                temp.push(p);
-            });
-        return temp;
     }
 
     getParamLanes(): LaneType[] {
@@ -83,7 +50,7 @@ export class Application {
         program.parse(process.argv);
 
         const lanes: LaneType[] = []
-        const lane = this.lanes
+        this.lanes
             .forEach(lane => {
                 if (program[lane.name]) {
                     lanes.push(lane);
@@ -95,7 +62,6 @@ export class Application {
     }
 
     async presentLanes() {
-        // clear();
         const answer = await inquirer.prompt([
             {
                 type: 'list',
@@ -120,7 +86,7 @@ export class Application {
         try {
             await this.runHook('BEFORE_EACH', lane);
             console.log(chalk.green(`taking lane ${lane.name}`));
-            const ret = await lane.lane(this.getLaneContext(lane), ...args);
+            const ret = await this.instance[lane.name](this.getLaneContext(lane), ...args)
             await this.runHook('AFTER_EACH', lane);
             return ret;
         } catch (err) {
@@ -152,17 +118,6 @@ export class Application {
             lane: lane,
             app: this,
         }
-        const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
-        actions
-            .forEach(action => context[action.key] = action.action);
-        this.lanes
-            .forEach(l => {
-                const lane = async (context: LaneContext, ...args) => {
-                    return await this.takeLane(l, ...args)
-                }
-                context[l.name] = lane;
-            });
-
         return context;
     }
 
@@ -195,6 +150,7 @@ export class Application {
                 job.scheduler.cancel();
             });
     }
+
 }
 
 export function App() {
@@ -214,19 +170,21 @@ export function Hook(hook: HookName) {
 export function Plugin(name: string) {
     return new Decorators().PluginDecorator(name);
 }
-export function Action(name: string) {
-    return new Decorators().ActionDecorator(name);
+export function Action(description: string) {
+    return new Decorators().ActionDecorator(description);
 }
 
 @Singleton
 export class Decorators {
 
-    @Inject app: Application;
+    @Inject app: Core;
 
     AppDecorator() {
 
         return (target) => {
             //this is called once the app is done loading
+            this.app.instance = new target();
+
             this.app.run();
         }
     }
@@ -255,19 +213,13 @@ export class Decorators {
     PluginDecorator(name: string) {
 
         return (target: Function) => {
-            target.prototype['name'] = name;
+
         }
     }
 
     ActionDecorator(description: string) {
         return function (target: Object, propertyKey: string, descriptor: PropertyDescriptor) {
-            const actions: ActionType[] = target['actions'] || [];
-            actions.push({ description: description, key: propertyKey, action: target[propertyKey] })
-            target['actions'] = actions;
+
         }
     }
 }
-
-
-
-

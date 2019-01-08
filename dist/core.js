@@ -23,62 +23,31 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const commander = require('commander');
-// const clear = require('clear');
 const path = require('path');
 const scheduler = require('node-schedule');
 const appProvider = {
-    get: () => { return new Application(); }
+    get: () => { return new Core(); }
 };
-let Application = class Application {
+let Core = class Core {
     constructor() {
-        this.plugins = [];
         this.lanes = [];
         this.jobs = [];
         this.hooks = [];
         this.appDir = path.dirname(require.main.filename);
-        this.load();
-    }
-    load() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.fileExists(`${this.appDir}/../plugins.json`)) {
-                const file = this.parseJSON(`${this.appDir}/../plugins.json`);
-                this.plugins = this.loadPlugins(file.plugins);
-            }
-            else {
-                console.error('no pluginfile found');
-            }
-        });
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.fileExists(`${this.appDir}/../plugins.json`)) {
-                const params = this.getParamLanes();
-                if (params.length === 0) {
-                    yield this.presentLanes();
-                }
-                else {
-                    yield this.takeMultiple(params);
-                }
+            const params = this.getParamLanes();
+            if (params.length === 0) {
+                yield this.presentLanes();
             }
             else {
-                console.log('no pluginfile found, aborting');
+                yield this.takeMultiple(params);
             }
         });
-    }
-    fileExists(path) {
-        return fs.existsSync(path);
     }
     parseJSON(path) {
         return JSON.parse(fs.readFileSync(path, 'utf8'));
-    }
-    loadPlugins(plugins) {
-        const temp = [];
-        plugins
-            .forEach((plugin) => {
-            const p = new (require(`${this.appDir}/../node_modules/` + plugin)).default();
-            temp.push(p);
-        });
-        return temp;
     }
     getParamLanes() {
         const packageJSON = this.parseJSON(`${this.appDir}/../package.json`);
@@ -90,7 +59,7 @@ let Application = class Application {
         });
         program.parse(process.argv);
         const lanes = [];
-        const lane = this.lanes
+        this.lanes
             .forEach(lane => {
             if (program[lane.name]) {
                 lanes.push(lane);
@@ -100,7 +69,6 @@ let Application = class Application {
     }
     presentLanes() {
         return __awaiter(this, void 0, void 0, function* () {
-            // clear();
             const answer = yield inquirer.prompt([
                 {
                     type: 'list',
@@ -123,7 +91,7 @@ let Application = class Application {
             try {
                 yield this.runHook('BEFORE_EACH', lane);
                 console.log(chalk.green(`taking lane ${lane.name}`));
-                const ret = yield lane.lane(this.getLaneContext(lane), ...args);
+                const ret = yield this.instance[lane.name](this.getLaneContext(lane), ...args);
                 yield this.runHook('AFTER_EACH', lane);
                 return ret;
             }
@@ -158,16 +126,6 @@ let Application = class Application {
             lane: lane,
             app: this,
         };
-        const actions = this.plugins.map(plugin => plugin.actions).reduce((prev, curr) => [...prev, ...curr]);
-        actions
-            .forEach(action => context[action.key] = action.action);
-        this.lanes
-            .forEach(l => {
-            const lane = (context, ...args) => __awaiter(this, void 0, void 0, function* () {
-                return yield this.takeLane(l, ...args);
-            });
-            context[l.name] = lane;
-        });
         return context;
     }
     runHook(hookName, lane) {
@@ -200,12 +158,11 @@ let Application = class Application {
         });
     }
 };
-Application = __decorate([
+Core = __decorate([
     typescript_ioc_1.Provided(appProvider),
-    typescript_ioc_1.Singleton,
-    __metadata("design:paramtypes", [])
-], Application);
-exports.Application = Application;
+    typescript_ioc_1.Singleton
+], Core);
+exports.Core = Core;
 function App() {
     return new Decorators().AppDecorator();
 }
@@ -226,14 +183,15 @@ function Plugin(name) {
     return new Decorators().PluginDecorator(name);
 }
 exports.Plugin = Plugin;
-function Action(name) {
-    return new Decorators().ActionDecorator(name);
+function Action(description) {
+    return new Decorators().ActionDecorator(description);
 }
 exports.Action = Action;
 let Decorators = class Decorators {
     AppDecorator() {
         return (target) => {
             //this is called once the app is done loading
+            this.app.instance = new target();
             this.app.run();
         };
     }
@@ -257,20 +215,16 @@ let Decorators = class Decorators {
     }
     PluginDecorator(name) {
         return (target) => {
-            target.prototype['name'] = name;
         };
     }
     ActionDecorator(description) {
         return function (target, propertyKey, descriptor) {
-            const actions = target['actions'] || [];
-            actions.push({ description: description, key: propertyKey, action: target[propertyKey] });
-            target['actions'] = actions;
         };
     }
 };
 __decorate([
     typescript_ioc_1.Inject,
-    __metadata("design:type", Application)
+    __metadata("design:type", Core)
 ], Decorators.prototype, "app", void 0);
 Decorators = __decorate([
     typescript_ioc_1.Singleton
