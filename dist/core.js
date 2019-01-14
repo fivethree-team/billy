@@ -50,7 +50,7 @@ let Core = class Core {
         return JSON.parse(fs.readFileSync(path, 'utf8'));
     }
     getParamLanes() {
-        const packageJSON = this.parseJSON(`${this.appDir}/../package.json`);
+        const packageJSON = this.parseJSON(`${this.appDir}/../../package.json`);
         let program = commander
             .version(packageJSON.version);
         this.lanes

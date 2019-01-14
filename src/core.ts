@@ -38,7 +38,7 @@ export class Core {
     }
 
     getParamLanes(): LaneType[] {
-        const packageJSON = this.parseJSON(`${this.appDir}/../package.json`);
+        const packageJSON = this.parseJSON(`${this.appDir}/../../package.json`);
         let program = commander
             .version(packageJSON.version);
 
