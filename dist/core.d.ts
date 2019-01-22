@@ -1,4 +1,4 @@
-import { LaneType, JobType, HookType, HookName } from './types';
+import { LaneType, LaneContext, JobType, HookType, HookName } from './types';
 export declare class Core {
     lanes: LaneType[];
     jobs: JobType[];
@@ -12,8 +12,9 @@ export declare class Core {
     takeLane(lane: LaneType, ...args: any[]): Promise<any>;
     takeMultiple(lanes: LaneType[]): Promise<void>;
     processAsyncArray(array: any[], asyncFunc: any): Promise<void>;
-    private getLaneContext;
-    runHook(hookName: HookName, lane: LaneType): Promise<void>;
+    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR'): HookType;
+    getLaneContext(lane: LaneType): LaneContext;
+    runHook(lane: LaneType, ...args: any[]): Promise<any>;
     schedule(): JobType[];
     cancelScheduled(): void;
 }

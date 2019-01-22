@@ -3,7 +3,7 @@ import { Core } from './core';
 export interface LaneType {
     name: string;
     description: string;
-    lane: Function;
+    // lane: Function;
     args?: any[];
 }
 export interface JobType {

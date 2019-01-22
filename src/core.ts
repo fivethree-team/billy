@@ -20,7 +20,7 @@ export class Core {
     lanes: LaneType[] = [];
     jobs: JobType[] = [];
     hooks: HookType[] = [];
-    appDir = path.dirname(require.main.filename);
+    appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
     instance: any;
 
     async run() {
@@ -38,7 +38,7 @@ export class Core {
     }
 
     getParamLanes(): LaneType[] {
-        const packageJSON = this.parseJSON(`${this.appDir}/../../package.json`);
+        const packageJSON = this.parseJSON(`${this.appDir}/package.json`);
         let program = commander
             .version(packageJSON.version);
 
@@ -75,35 +75,31 @@ export class Core {
             }
         ]);
 
-        await this.runHook('BEFORE_ALL', answer.lane);
+        await this.runHook(this.getHook('BEFORE_ALL').lane);
 
         await this.takeLane(answer.lane);
 
-        await this.runHook('AFTER_ALL', answer.lane);
+        await this.runHook(this.getHook('AFTER_ALL').lane);
+
     }
 
     async takeLane(lane: LaneType, ...args) {
         try {
-            await this.runHook('BEFORE_EACH', lane);
-            console.log(chalk.green(`taking lane ${lane.name}`));
             const ret = await this.instance[lane.name](this.getLaneContext(lane), ...args)
-            await this.runHook('AFTER_EACH', lane);
             return ret;
         } catch (err) {
-            const errorHook = this.hooks.find(hook => hook.name === 'ERROR');
-            if (errorHook) {
-                await errorHook.lane.lane(err, this.getLaneContext(lane), ...args);
-            }
-            throw new Error(err.message || err);
+            await this.runHook(this.getHook('ERROR').lane);
+
+            console.error(err);
         }
     }
 
     async takeMultiple(lanes: LaneType[]) {
-        await this.runHook('BEFORE_ALL', lanes[0]);
+        await this.runHook(this.getHook('BEFORE_ALL').lane);
         await this.processAsyncArray(lanes, async (lane) => {
             await this.takeLane(lane);
         })
-        await this.runHook('AFTER_ALL', lanes[lanes.length - 1]);
+        await this.runHook(this.getHook('AFTER_ALL').lane);
     }
 
     async processAsyncArray(array: any[], asyncFunc) {
@@ -112,8 +108,12 @@ export class Core {
         };
     }
 
+    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR'): HookType {
+        return this.hooks.find(hook => hook.name === type);
+    }
 
-    private getLaneContext(lane: LaneType): LaneContext {
+
+    getLaneContext(lane: LaneType): LaneContext {
         const context = {
             lane: lane,
             app: this,
@@ -121,26 +121,28 @@ export class Core {
         return context;
     }
 
-    async runHook(hookName: HookName, lane: LaneType) {
-        const hooks = this.hooks.filter(hook => hook.name === hookName);
-        if (hooks.length > 0) {
-            await this.processAsyncArray(hooks, async (hook: HookType) => {
-                await hook.lane.lane(this.getLaneContext(lane));
-            })
+    async runHook(lane: LaneType, ...args) {
+        try {
+            const ret = await this.instance[lane.name](this.getLaneContext(lane), ...args)
+            return ret;
+        } catch (err) {
+            await this.runHook(this.getHook('ERROR').lane);
+
+            console.error(err);
         }
     }
 
     schedule(): JobType[] {
         this.jobs
             .forEach(job => {
-                console.log('schedule job', job.name)
-                const instance = scheduler.scheduleJob(job.schedule, (fireDate) => {
+                const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
                     console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
-                    this.takeLane(job.lane)
+                    await this.runHook(this.getHook('BEFORE_ALL').lane);
+                    await this.takeLane(job.lane);
+                    await this.runHook(this.getHook('AFTER_ALL').lane);
                 });
                 job.scheduler = instance;
             });
-        console.log('all jobs', this.jobs);
         return this.jobs;
     }
 
@@ -184,6 +186,17 @@ export class Decorators {
         return (target) => {
             //this is called once the app is done loading
             this.app.instance = new target();
+            this.app.lanes
+                .forEach(async (lane: LaneType, index) => {
+                    const func = this.app.instance[lane.name].bind(this.app.instance)
+                    this.app.instance[lane.name] = async (...args) => {
+                        await this.app.runHook(this.app.getHook('BEFORE_EACH').lane);
+                        console.log(chalk.green(`taking lane ${lane.name}`));
+                        await func(...args);
+                        await this.app.runHook(this.app.getHook('AFTER_EACH').lane);
+                    }
+
+                });
 
             this.app.run();
         }
@@ -192,20 +205,20 @@ export class Decorators {
     LaneDecorator(description: string) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
             const lanes: LaneType[] = this.app.lanes;
-            lanes.push({ name: propertyKey, description: description, lane: target[propertyKey] });
+            lanes.push({ name: propertyKey, description: description });
         }
     }
 
     ScheduledDecorator(schedule: string | any) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const job: JobType = { name: propertyKey, lane: { name: propertyKey, description: null, lane: target[propertyKey] }, schedule: schedule, scheduler: null }
+            const job: JobType = { name: propertyKey, lane: { name: propertyKey, description: null }, schedule: schedule, scheduler: null }
             this.app.jobs.push(job);
         }
     }
 
     HookDecorator(name: HookName) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const hook: HookType = { name: name, lane: { name: propertyKey, description: null, lane: target[propertyKey] } }
+            const hook: HookType = { name: name, lane: { name: propertyKey, description: null } }
             this.app.hooks.push(hook);
         }
     }
