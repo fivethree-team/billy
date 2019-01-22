@@ -81,11 +81,11 @@ export class Core {
             }
         ]);
 
-        await this.runHook(this.getHook('BEFORE_ALL').lane);
+        await this.runHook(this.getHook('BEFORE_ALL'));
 
         await this.takeLane(answer.lane);
 
-        await this.runHook(this.getHook('AFTER_ALL').lane);
+        await this.runHook(this.getHook('AFTER_ALL'));
 
     }
 
@@ -94,18 +94,18 @@ export class Core {
             const ret = await this.instance[lane.name](this.getLaneContext(lane), ...args)
             return ret;
         } catch (err) {
-            await this.runHook(this.getHook('ERROR').lane);
+            await this.runHook(this.getHook('ERROR'));
 
             console.error(err);
         }
     }
 
     async takeMultiple(lanes: LaneType[]) {
-        await this.runHook(this.getHook('BEFORE_ALL').lane);
+        await this.runHook(this.getHook('BEFORE_ALL'));
         await this.processAsyncArray(lanes, async (lane) => {
             await this.takeLane(lane);
         })
-        await this.runHook(this.getHook('AFTER_ALL').lane);
+        await this.runHook(this.getHook('AFTER_ALL'));
     }
 
     async processAsyncArray(array: any[], asyncFunc) {
@@ -114,8 +114,9 @@ export class Core {
         };
     }
 
-    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR'): HookType {
-        return this.hooks.find(hook => hook.name === type);
+    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR') {
+        const hook = this.hooks.find(hook => hook.name === type);
+        return hook && hook.lane ? hook.lane : null;
     }
 
 
@@ -135,7 +136,7 @@ export class Core {
             const ret = await this.instance[lane.name](this.getLaneContext(lane), ...args)
             return ret;
         } catch (err) {
-            await this.runHook(this.getHook('ERROR').lane, ...args);
+            await this.runHook(this.getHook('ERROR'), ...args);
 
             console.error(err);
         }
@@ -146,9 +147,9 @@ export class Core {
             .forEach(job => {
                 const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
                     console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
-                    await this.runHook(this.getHook('BEFORE_ALL').lane);
+                    await this.runHook(this.getHook('BEFORE_ALL'));
                     await this.takeLane(job.lane);
-                    await this.runHook(this.getHook('AFTER_ALL').lane);
+                    await this.runHook(this.getHook('AFTER_ALL'));
                 });
                 job.scheduler = instance;
             });
@@ -218,10 +219,10 @@ export class Decorators {
                 .forEach(async (lane: LaneType, index) => {
                     const func = this.app.instance[lane.name].bind(this.app.instance)
                     this.app.instance[lane.name] = async (...args) => {
-                        await this.app.runHook(this.app.getHook('BEFORE_EACH').lane);
+                        await this.app.runHook(this.app.getHook('BEFORE_EACH'));
                         console.log(chalk.green(`taking lane ${lane.name}`));
                         await func(...args);
-                        await this.app.runHook(this.app.getHook('AFTER_EACH').lane);
+                        await this.app.runHook(this.app.getHook('AFTER_EACH'));
                     }
 
                 });
