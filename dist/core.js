@@ -195,7 +195,6 @@ let Decorators = class Decorators {
                 .forEach((lane, index) => __awaiter(this, void 0, void 0, function* () {
                 const func = this.app.instance[lane.name].bind(this.app.instance);
                 this.app.instance[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
-                    console.log('args', args);
                     yield this.app.runHook(this.app.getHook('BEFORE_EACH').lane);
                     console.log(chalk.green(`taking lane ${lane.name}`));
                     yield func(...args);
