@@ -25,6 +25,9 @@ const chalk = require('chalk');
 const commander = require('commander');
 const path = require('path');
 const scheduler = require('node-schedule');
+const express = require('express')();
+const bodyParser = require('body-parser');
+express.use(bodyParser.json());
 const appProvider = {
     get: () => { return new Core(); }
 };
@@ -33,6 +36,7 @@ let Core = class Core {
         this.lanes = [];
         this.jobs = [];
         this.hooks = [];
+        this.webhooks = [];
         this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
     }
     run() {
@@ -127,12 +131,15 @@ let Core = class Core {
     }
     runHook(lane, ...args) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!lane) {
+                return;
+            }
             try {
                 const ret = yield this.instance[lane.name](this.getLaneContext(lane), ...args);
                 return ret;
             }
             catch (err) {
-                yield this.runHook(this.getHook('ERROR').lane);
+                yield this.runHook(this.getHook('ERROR').lane, ...args);
                 console.error(err);
             }
         });
@@ -149,6 +156,18 @@ let Core = class Core {
             job.scheduler = instance;
         });
         return this.jobs;
+    }
+    startWebhooks(port = 7777) {
+        console.log(chalk.green(`starting webooks server on port ${port}...`));
+        this.webhooks
+            .forEach(hook => {
+            express.post(hook.path, (req, res) => __awaiter(this, void 0, void 0, function* () {
+                console.log(`💌  running webhook ${hook.lane.name}`);
+                res.sendStatus(200);
+                yield this.takeLane(hook.lane, req.body);
+            }));
+        });
+        express.listen(port);
     }
     cancelScheduled() {
         this.jobs
@@ -178,6 +197,10 @@ function Hook(hook) {
     return new Decorators().HookDecorator(hook);
 }
 exports.Hook = Hook;
+function Webhook(path) {
+    return new Decorators().WebhookDecorator(path);
+}
+exports.Webhook = Webhook;
 function Plugin(name) {
     return new Decorators().PluginDecorator(name);
 }
@@ -220,6 +243,12 @@ let Decorators = class Decorators {
         return (target, propertyKey, descriptor) => {
             const hook = { name: name, lane: { name: propertyKey, description: null } };
             this.app.hooks.push(hook);
+        };
+    }
+    WebhookDecorator(path) {
+        return (target, propertyKey, descriptor) => {
+            const hook = { path: path, lane: { name: propertyKey, description: null } };
+            this.app.webhooks.push(hook);
         };
     }
     PluginDecorator(name) {

@@ -18,6 +18,10 @@ export interface HookType {
     lane: LaneType;
     args?: any[];
 }
+export interface WebHookType {
+    path: string;
+    lane: LaneType;
+}
 
 export type HookName = 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
 

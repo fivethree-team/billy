@@ -1,8 +1,9 @@
-import { LaneType, LaneContext, JobType, HookType, HookName } from './types';
+import { LaneType, LaneContext, JobType, HookType, HookName, WebHookType } from './types';
 export declare class Core {
     lanes: LaneType[];
     jobs: JobType[];
     hooks: HookType[];
+    webhooks: WebHookType[];
     appDir: any;
     instance: any;
     run(): Promise<void>;
@@ -16,12 +17,14 @@ export declare class Core {
     getLaneContext(lane: LaneType): LaneContext;
     runHook(lane: LaneType, ...args: any[]): Promise<any>;
     schedule(): JobType[];
+    startWebhooks(port?: number): void;
     cancelScheduled(): void;
 }
 export declare function App(): (target: any) => void;
 export declare function Lane(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Scheduled(schedule: string | any): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Hook(hook: HookName): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function Webhook(path: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Plugin(name: string): (target: Function) => void;
 export declare function Action(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare class Decorators {
@@ -30,6 +33,7 @@ export declare class Decorators {
     LaneDecorator(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
     ScheduledDecorator(schedule: string | any): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
     HookDecorator(name: HookName): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
+    WebhookDecorator(path: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
     PluginDecorator(name: string): (target: Function) => void;
     ActionDecorator(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 }
