@@ -13,7 +13,7 @@ export declare class Core {
     takeLane(lane: LaneType, ...args: any[]): Promise<any>;
     takeMultiple(lanes: LaneType[]): Promise<void>;
     processAsyncArray(array: any[], asyncFunc: any): Promise<void>;
-    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR'): HookType;
+    getHook(type: 'BEFORE_ALL' | 'AFTER_ALL' | 'AFTER_EACH' | 'BEFORE_EACH' | 'ERROR'): LaneType;
     getLaneContext(lane: LaneType): LaneContext;
     runHook(lane: LaneType, ...args: any[]): Promise<any>;
     schedule(): JobType[];

@@ -85,9 +85,9 @@ let Core = class Core {
                     })
                 }
             ]);
-            yield this.runHook(this.getHook('BEFORE_ALL').lane);
+            yield this.runHook(this.getHook('BEFORE_ALL'));
             yield this.takeLane(answer.lane);
-            yield this.runHook(this.getHook('AFTER_ALL').lane);
+            yield this.runHook(this.getHook('AFTER_ALL'));
         });
     }
     takeLane(lane, ...args) {
@@ -97,18 +97,18 @@ let Core = class Core {
                 return ret;
             }
             catch (err) {
-                yield this.runHook(this.getHook('ERROR').lane);
+                yield this.runHook(this.getHook('ERROR'));
                 console.error(err);
             }
         });
     }
     takeMultiple(lanes) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.runHook(this.getHook('BEFORE_ALL').lane);
+            yield this.runHook(this.getHook('BEFORE_ALL'));
             yield this.processAsyncArray(lanes, (lane) => __awaiter(this, void 0, void 0, function* () {
                 yield this.takeLane(lane);
             }));
-            yield this.runHook(this.getHook('AFTER_ALL').lane);
+            yield this.runHook(this.getHook('AFTER_ALL'));
         });
     }
     processAsyncArray(array, asyncFunc) {
@@ -120,7 +120,8 @@ let Core = class Core {
         });
     }
     getHook(type) {
-        return this.hooks.find(hook => hook.name === type);
+        const hook = this.hooks.find(hook => hook.name === type);
+        return hook && hook.lane ? hook.lane : null;
     }
     getLaneContext(lane) {
         const context = {
@@ -139,7 +140,7 @@ let Core = class Core {
                 return ret;
             }
             catch (err) {
-                yield this.runHook(this.getHook('ERROR').lane, ...args);
+                yield this.runHook(this.getHook('ERROR'), ...args);
                 console.error(err);
             }
         });
@@ -149,9 +150,9 @@ let Core = class Core {
             .forEach(job => {
             const instance = scheduler.scheduleJob(job.schedule, (fireDate) => __awaiter(this, void 0, void 0, function* () {
                 console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
-                yield this.runHook(this.getHook('BEFORE_ALL').lane);
+                yield this.runHook(this.getHook('BEFORE_ALL'));
                 yield this.takeLane(job.lane);
-                yield this.runHook(this.getHook('AFTER_ALL').lane);
+                yield this.runHook(this.getHook('AFTER_ALL'));
             }));
             job.scheduler = instance;
         });
@@ -218,10 +219,10 @@ let Decorators = class Decorators {
                 .forEach((lane, index) => __awaiter(this, void 0, void 0, function* () {
                 const func = this.app.instance[lane.name].bind(this.app.instance);
                 this.app.instance[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
-                    yield this.app.runHook(this.app.getHook('BEFORE_EACH').lane);
+                    yield this.app.runHook(this.app.getHook('BEFORE_EACH'));
                     console.log(chalk.green(`taking lane ${lane.name}`));
                     yield func(...args);
-                    yield this.app.runHook(this.app.getHook('AFTER_EACH').lane);
+                    yield this.app.runHook(this.app.getHook('AFTER_EACH'));
                 });
             }));
             this.app.run();
