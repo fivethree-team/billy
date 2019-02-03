@@ -1,5 +1,6 @@
 import { LaneType, LaneContext, JobType, HookType, HookName, WebHookType } from './types';
 import { Provided, Provider, Singleton, Inject } from 'typescript-ioc';
+import Table from 'cli-table';
 require('dotenv').config();
 
 const fs = require('fs');
@@ -68,22 +69,59 @@ export class Core {
     }
 
     async presentLanes() {
-        const answer = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'lane',
-                paginated: true,
-                pageSize: 20,
-                message: `${chalk.bold('Select Lane')}`,
-                choices: this.lanes.map((lane, index) => {
-                    return { name: `${chalk.underline.blueBright(`${index + 1}.${lane.name}:`)}\n${lane.description}`, value: lane };
-                })
+        const table = new Table({
+            head: ["Number", "Lane", "Description"],
+            chars: {
+                'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗'
+                , 'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝'
+                , 'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼'
+                , 'right': '║', 'right-mid': '╢', 'middle': '│'
             }
-        ]);
+        });
+        this.lanes.forEach((lane, index) => table.push([chalk.blueBright(`${index + 1}`), lane.name, lane.description]));
+        console.log(table.toString());
 
+        // const answer = await inquirer.prompt([
+        //     {
+        //         type: 'list',
+        //         name: 'lane',
+        //         pageSize: process.stdout.rows,
+        //         message: `${chalk.bold('Select Lane')}`,
+        //         choices: this.lanes.map((lane, index) => {
+        //             return { name: `${chalk.underline.blueBright(`${index + 1}. ${lane.name}`)} \n ${lane.description}`, value: lane };
+        //         })
+        //     }
+        // ]);
+
+        const lane = (await inquirer.prompt([{
+            type: 'input',
+            name: 'lane',
+            message: 'please enter number or lane name',
+            validate: (input) => {
+                if (!!input && isNaN(input)) {
+                    if (this.lanes.some(lane => lane.name === input)) {
+                        return true;
+                    } else {
+                        console.log(chalk.red(`  | couldn't find lane with name ${input}`))
+                        return false;
+                    }
+                } else {
+                    if (+input > 0 && +input <= this.lanes.length) {
+                        return true;
+                    } else {
+                        console.log(chalk.red('  | specify a number between 1 and ' + this.lanes.length));
+                        return false;
+                    }
+                }
+            }
+        }])).lane;
         await this.runHook(this.getHook('BEFORE_ALL'));
 
-        await this.takeLane(answer.lane);
+        if (isNaN(lane)) {
+            await this.takeLane(this.lanes.find(l => l.name === lane));
+        } else {
+            await this.takeLane(this.lanes[lane - 1]);
+        }
 
         await this.runHook(this.getHook('AFTER_ALL'));
 
@@ -164,7 +202,7 @@ export class Core {
                 express.post(hook.path, async (req, res) => {
                     console.log(`💌  running webhook ${hook.lane.name}`);
                     res.sendStatus(200)
-                    await this.takeLane(hook.lane,req.body);
+                    await this.takeLane(hook.lane, req.body);
                 })
             })
 

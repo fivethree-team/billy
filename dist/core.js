@@ -16,8 +16,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_ioc_1 = require("typescript-ioc");
+const cli_table_1 = __importDefault(require("cli-table"));
 require('dotenv').config();
 const fs = require('fs');
 const inquirer = require('inquirer');
@@ -73,20 +77,60 @@ let Core = class Core {
     }
     presentLanes() {
         return __awaiter(this, void 0, void 0, function* () {
-            const answer = yield inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'lane',
-                    paginated: true,
-                    pageSize: 20,
-                    message: `${chalk.bold('Select Lane')}`,
-                    choices: this.lanes.map((lane, index) => {
-                        return { name: `${chalk.underline.blueBright(`${index + 1}.${lane.name}:`)}\n${lane.description}`, value: lane };
-                    })
+            const table = new cli_table_1.default({
+                head: ["Number", "Lane", "Description"],
+                chars: {
+                    'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
+                    'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
+                    'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼',
+                    'right': '║', 'right-mid': '╢', 'middle': '│'
                 }
-            ]);
+            });
+            this.lanes.forEach((lane, index) => table.push([chalk.blueBright(`${index + 1}`), lane.name, lane.description]));
+            console.log(table.toString());
+            // const answer = await inquirer.prompt([
+            //     {
+            //         type: 'list',
+            //         name: 'lane',
+            //         pageSize: process.stdout.rows,
+            //         message: `${chalk.bold('Select Lane')}`,
+            //         choices: this.lanes.map((lane, index) => {
+            //             return { name: `${chalk.underline.blueBright(`${index + 1}. ${lane.name}`)} \n ${lane.description}`, value: lane };
+            //         })
+            //     }
+            // ]);
+            const lane = (yield inquirer.prompt([{
+                    type: 'input',
+                    name: 'lane',
+                    message: 'please enter number or lane name',
+                    validate: (input) => {
+                        if (!!input && isNaN(input)) {
+                            if (this.lanes.some(lane => lane.name === input)) {
+                                return true;
+                            }
+                            else {
+                                console.log(chalk.red(`  | couldn't find lane with name ${input}`));
+                                return false;
+                            }
+                        }
+                        else {
+                            if (+input > 0 && +input <= this.lanes.length) {
+                                return true;
+                            }
+                            else {
+                                console.log(chalk.red('  | specify a number between 1 and ' + this.lanes.length));
+                                return false;
+                            }
+                        }
+                    }
+                }])).lane;
             yield this.runHook(this.getHook('BEFORE_ALL'));
-            yield this.takeLane(answer.lane);
+            if (isNaN(lane)) {
+                yield this.takeLane(this.lanes.find(l => l.name === lane));
+            }
+            else {
+                yield this.takeLane(this.lanes[lane - 1]);
+            }
             yield this.runHook(this.getHook('AFTER_ALL'));
         });
     }
