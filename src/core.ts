@@ -259,8 +259,9 @@ export class Decorators {
                     this.app.instance[lane.name] = async (...args) => {
                         await this.app.runHook(this.app.getHook('BEFORE_EACH'));
                         console.log(chalk.green(`taking lane ${lane.name}`));
-                        await func(...args);
+                        const ret = await func(...args);
                         await this.app.runHook(this.app.getHook('AFTER_EACH'));
+                        return ret;
                     }
 
                 });

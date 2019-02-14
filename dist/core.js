@@ -265,8 +265,9 @@ let Decorators = class Decorators {
                 this.app.instance[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
                     yield this.app.runHook(this.app.getHook('BEFORE_EACH'));
                     console.log(chalk.green(`taking lane ${lane.name}`));
-                    yield func(...args);
+                    const ret = yield func(...args);
                     yield this.app.runHook(this.app.getHook('AFTER_EACH'));
+                    return ret;
                 });
             }));
             this.app.run();
