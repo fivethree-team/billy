@@ -41,31 +41,52 @@ let Core = class Core {
         this.jobs = [];
         this.hooks = [];
         this.webhooks = [];
+        this.actions = [];
+        this.plugins = [];
+        this.params = [];
         this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
+        this.meta = [];
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            const params = this.getParamLanes();
-            if (params.length === 0) {
+            const program = this.initProgram();
+            console.log(program);
+            this.initParameters(program);
+            const lanes = this.getLanesFromCommand(program);
+            if (lanes.length === 0) {
                 yield this.presentLanes();
             }
             else {
-                yield this.takeMultiple(params);
+                yield this.takeMultiple(lanes);
             }
         });
     }
-    parseJSON(path) {
-        return JSON.parse(fs.readFileSync(path, 'utf8'));
+    initParameters(program) {
+        this.params
+            .forEach(param => {
+            if (program[param.name] && typeof program[param.name] !== 'function') {
+                param.value = program[param.name];
+            }
+        });
     }
-    getParamLanes() {
+    initProgram() {
         const packageJSON = this.parseJSON(`${this.appDir}/package.json`);
         let program = commander
-            .version(packageJSON.version);
+            .version(packageJSON.version, '-v, --version');
+        this.params.forEach(param => {
+            program = program.option(`--${param.name} [var]`, param.description);
+        });
         this.lanes
             .forEach(lane => {
             program = program.option(lane.name, lane.description);
         });
         program.parse(process.argv);
+        return program;
+    }
+    parseJSON(path) {
+        return JSON.parse(fs.readFileSync(path, 'utf8'));
+    }
+    getLanesFromCommand(program) {
         const lanes = [];
         this.lanes
             .forEach(lane => {
@@ -88,17 +109,6 @@ let Core = class Core {
             });
             this.lanes.forEach((lane, index) => table.push([chalk.blueBright(`${index + 1}`), lane.name, lane.description]));
             console.log(table.toString());
-            // const answer = await inquirer.prompt([
-            //     {
-            //         type: 'list',
-            //         name: 'lane',
-            //         pageSize: process.stdout.rows,
-            //         message: `${chalk.bold('Select Lane')}`,
-            //         choices: this.lanes.map((lane, index) => {
-            //             return { name: `${chalk.underline.blueBright(`${index + 1}. ${lane.name}`)} \n ${lane.description}`, value: lane };
-            //         })
-            //     }
-            // ]);
             const lane = (yield inquirer.prompt([{
                     type: 'input',
                     name: 'lane',
@@ -136,14 +146,55 @@ let Core = class Core {
     }
     takeLane(lane, ...args) {
         return __awaiter(this, void 0, void 0, function* () {
+            const params = yield this.getArgs(lane);
             try {
-                const ret = yield this.instance[lane.name](this.getLaneContext(lane), ...args);
+                const ret = yield this.instance[lane.name](...params, ...args);
                 return ret;
             }
             catch (err) {
-                yield this.runHook(this.getHook('ERROR'));
+                yield this.runHook(this.getHook('ERROR'), ...args, err);
                 console.error(err);
             }
+        });
+    }
+    getArgs(lane) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contextMeta = this.meta.find(m => m.propertyKey === lane.name);
+            const params = yield this.resolveParams(lane);
+            const sortedParams = [];
+            params.forEach(param => {
+                sortedParams.push(param.value);
+            });
+            if (contextMeta) {
+                sortedParams.splice(contextMeta.contextIndex, 0, this.getLaneContext(lane));
+            }
+            return sortedParams;
+        });
+    }
+    resolveParams(lane) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const params = this.params
+                .filter(param => param.lane === lane.name)
+                .sort((a, b) => {
+                return a.index - b.index;
+            });
+            if (params.length === 0) {
+                return [];
+            }
+            let ret = [];
+            yield this.processAsyncArray(params, (p) => __awaiter(this, void 0, void 0, function* () {
+                if (p.value) {
+                    return ret.push(p);
+                }
+                const value = (yield inquirer.prompt([{
+                        name: 'answer',
+                        message: p.description,
+                    }
+                ])).answer;
+                p.value = value;
+                ret.push(p);
+            }));
+            return ret;
         });
     }
     takeMultiple(lanes) {
@@ -179,12 +230,13 @@ let Core = class Core {
             if (!lane) {
                 return;
             }
+            const params = yield this.getArgs(lane);
             try {
-                const ret = yield this.instance[lane.name](this.getLaneContext(lane), ...args);
+                const ret = yield this.instance[lane.name](...params, ...args);
                 return ret;
             }
             catch (err) {
-                yield this.runHook(this.getHook('ERROR'), ...args);
+                yield this.runHook(this.getHook('ERROR'), ...args, err);
                 console.error(err);
             }
         });
@@ -254,6 +306,18 @@ function Action(description) {
     return new Decorators().ActionDecorator(description);
 }
 exports.Action = Action;
+function Param(param) {
+    return new Decorators().ParamDecorator(param);
+}
+exports.Param = Param;
+function param(options) {
+    return new Decorators().paramDecorator(options);
+}
+exports.param = param;
+function context() {
+    return new Decorators().contextDecorator();
+}
+exports.context = context;
 let Decorators = class Decorators {
     AppDecorator() {
         return (target) => {
@@ -299,10 +363,45 @@ let Decorators = class Decorators {
     }
     PluginDecorator(name) {
         return (target) => {
+            this.app.plugins.push(name);
         };
     }
     ActionDecorator(description) {
-        return function (target, propertyKey, descriptor) {
+        return (target, propertyKey, descriptor) => {
+            this.app.actions.push(propertyKey);
+        };
+    }
+    ParamDecorator(param) {
+        return (target, propertyKey, descriptor) => {
+            param.lane = propertyKey;
+            this.app.params.push(param);
+        };
+    }
+    paramDecorator(options) {
+        return (target, propertyKey, parameterIndex) => {
+            if (typeof options === 'string') {
+                const param = {
+                    index: parameterIndex,
+                    description: `Enter ${options}`,
+                    name: options,
+                    lane: propertyKey
+                };
+                this.app.params.push(param);
+            }
+            else {
+                const param = {
+                    index: parameterIndex,
+                    description: options.description || `Enter ${options.name}`,
+                    name: options.name,
+                    lane: propertyKey
+                };
+                this.app.params.push(param);
+            }
+        };
+    }
+    contextDecorator() {
+        return (target, propertyKey, parameterIndex) => {
+            this.app.meta.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
         };
     }
 };

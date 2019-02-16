@@ -1,4 +1,4 @@
-import { Core } from './core';
+import { BillyAPI } from "./api";
 export interface LaneType {
     name: string;
     description: string;
@@ -34,8 +34,10 @@ export interface MethodMeta {
     propertyKey: string;
     contextIndex: number;
 }
-export declare type HookName = 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
+export declare type HookName = 'ON_START' | 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
 export interface LaneContext {
-    lane: LaneType;
-    app: Core;
+    name: string;
+    description: string;
+    directory: string;
+    api: BillyAPI;
 }
