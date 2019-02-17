@@ -1,4 +1,4 @@
-import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName } from './types';
+import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions } from './types';
 import { Provided, Provider, Singleton } from 'typescript-ioc';
 import Table from 'cli-table';
 import { parseJSON, processAsyncArray } from './util';
@@ -36,6 +36,9 @@ export class Core {
     meta: MethodMeta[] = [];
     appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
     instance: any;
+    private program;
+    config: AppOptions = {};
+    private history: History;
 
 
     /**
@@ -45,11 +48,11 @@ export class Core {
      * @memberof Core
      */
     async run() {
-        const program = this.initProgram();
-        this.initParameters(program);
-        const lanes = this.getLanesFromCommand(program);
+        const startupHook = this.getHook('ON_START');
+        this.program = this.initProgram(this.config.allowUnknownOptions);
+        this.initParameters(this.program);
+        const lanes = this.getLanesFromCommand(this.program);
         if (lanes.length === 0) {
-            const startupHook = this.getHook('ON_START');
             if (startupHook) {
                 // handle root command yourself instead of displaying the lane prompt
                 await this.runHook(startupHook);
@@ -77,11 +80,14 @@ export class Core {
      * @returns returns the commander.js program
      * @memberof Core
      */
-    private initProgram() {
+    private initProgram(allowUnknownOptions = false) {
         const packageJSON = parseJSON(`${this.appDir}/package.json`);
 
         let program = commander
             .version(packageJSON.version, '-v, --version')
+
+        allowUnknownOptions ? program.allowUnknownOption() : false;
+
         this.lanes
             .forEach(lane => program = program.option(lane.name, lane.description));
         this.params
@@ -263,6 +269,7 @@ export class Core {
         }
         let ret: ParamType[] = [];
         await processAsyncArray(params, async (p: ParamType) => {
+            console.log('process param', p);
             if (p.value) { return ret.push(p) }
             if (p.optional) {
                 p.value = null;
@@ -350,6 +357,10 @@ export class Core {
 
             console.error(err);
         }
+    }
+
+    getProgram() {
+        return this.program;
     }
 }
 

@@ -1,5 +1,5 @@
-import { HookName, ParamOptions } from "./types";
-export declare function App(): (target: any) => void;
+import { HookName, ParamOptions, AppOptions } from "./types";
+export declare function App(config?: AppOptions): (target: any) => void;
 export declare function Lane(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Scheduled(schedule: string | any): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Hook(hook: HookName): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;

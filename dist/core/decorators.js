@@ -31,7 +31,12 @@ let CoreDecorators = class CoreDecorators {
      *
      * @memberof CoreDecorators
      */
-    startApp() {
+    startApp(config) {
+        if (config) {
+            this.app.config.allowUnknownOptions = config.allowUnknownOptions;
+            this.app.config.name = config.name;
+            this.app.config.description = config.description;
+        }
         return (target) => {
             //this is called once the app is done loading
             this.app.instance = new target();
@@ -148,7 +153,8 @@ let CoreDecorators = class CoreDecorators {
                     index: parameterIndex,
                     description: options.description || `Enter ${options.name}`,
                     name: options.name,
-                    lane: propertyKey
+                    lane: propertyKey,
+                    optional: options.optional
                 };
                 this.app.params.push(param);
             }
@@ -174,8 +180,8 @@ CoreDecorators = __decorate([
     typescript_ioc_1.Singleton
 ], CoreDecorators);
 //export Decorator factories here
-function App() {
-    return new CoreDecorators().startApp();
+function App(config) {
+    return new CoreDecorators().startApp(config);
 }
 exports.App = App;
 function Lane(description) {

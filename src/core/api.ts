@@ -95,7 +95,11 @@ export class BillyAPI {
      * @returns
      * @memberof BillyAPI
      */
-    async promptLaneAndRun(){
+    async promptLaneAndRun() {
         return this.application.promptLaneAndRun();
+    }
+
+    getArgs(): string[] {
+        return this.application.getProgram().rawArgs.filter((arg, i) => i > 1);
     }
 }

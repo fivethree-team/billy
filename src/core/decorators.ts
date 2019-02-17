@@ -1,5 +1,5 @@
 import { Singleton, Inject } from "typescript-ioc";
-import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions } from "./types";
+import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions } from "./types";
 import { Core } from "./core";
 const chalk = require('chalk');
 
@@ -19,7 +19,13 @@ class CoreDecorators {
      *
      * @memberof CoreDecorators
      */
-    startApp() {
+    startApp(config?: AppOptions) {
+
+        if (config) {
+            this.app.config.allowUnknownOptions = config.allowUnknownOptions;
+            this.app.config.name = config.name;
+            this.app.config.description = config.description;
+        }
 
         return (target) => {
             //this is called once the app is done loading
@@ -145,7 +151,8 @@ class CoreDecorators {
                     index: parameterIndex,
                     description: options.description || `Enter ${options.name}`,
                     name: options.name,
-                    lane: propertyKey
+                    lane: propertyKey,
+                    optional: options.optional
                 }
                 this.app.params.push(param);
             }
@@ -170,8 +177,8 @@ class CoreDecorators {
 
 //export Decorator factories here
 
-export function App() {
-    return new CoreDecorators().startApp();
+export function App(config?: AppOptions) {
+    return new CoreDecorators().startApp(config);
 }
 export function Lane(description: string) {
     return new CoreDecorators().registerLanes(description);

@@ -58,6 +58,7 @@ let Core = class Core {
         this.params = [];
         this.meta = [];
         this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
+        this.config = {};
     }
     /**
      * This is called once the AppDecorator is assigned.
@@ -67,11 +68,11 @@ let Core = class Core {
      */
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            const program = this.initProgram();
-            this.initParameters(program);
-            const lanes = this.getLanesFromCommand(program);
+            const startupHook = this.getHook('ON_START');
+            this.program = this.initProgram(this.config.allowUnknownOptions);
+            this.initParameters(this.program);
+            const lanes = this.getLanesFromCommand(this.program);
             if (lanes.length === 0) {
-                const startupHook = this.getHook('ON_START');
                 if (startupHook) {
                     // handle root command yourself instead of displaying the lane prompt
                     yield this.runHook(startupHook);
@@ -102,10 +103,11 @@ let Core = class Core {
      * @returns returns the commander.js program
      * @memberof Core
      */
-    initProgram() {
+    initProgram(allowUnknownOptions = false) {
         const packageJSON = util_1.parseJSON(`${this.appDir}/package.json`);
         let program = commander
             .version(packageJSON.version, '-v, --version');
+        allowUnknownOptions ? program.allowUnknownOption() : false;
         this.lanes
             .forEach(lane => program = program.option(lane.name, lane.description));
         this.params
@@ -283,6 +285,7 @@ let Core = class Core {
             }
             let ret = [];
             yield util_1.processAsyncArray(params, (p) => __awaiter(this, void 0, void 0, function* () {
+                console.log('process param', p);
                 if (p.value) {
                     return ret.push(p);
                 }
@@ -369,6 +372,9 @@ let Core = class Core {
                 console.error(err);
             }
         });
+    }
+    getProgram() {
+        return this.program;
     }
 };
 Core = __decorate([

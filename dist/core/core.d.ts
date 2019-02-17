@@ -1,4 +1,4 @@
-import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName } from './types';
+import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions } from './types';
 /**
  * The Core Application
  *
@@ -19,6 +19,9 @@ export declare class Core {
     meta: MethodMeta[];
     appDir: any;
     instance: any;
+    private program;
+    config: AppOptions;
+    private history;
     /**
      * This is called once the AppDecorator is assigned.
      * At this point all the lanes, plugins and params have been loaded into core
@@ -140,4 +143,5 @@ export declare class Core {
      * @memberof Core
      */
     runHook(lane: LaneType, ...args: any[]): Promise<any>;
+    getProgram(): any;
 }

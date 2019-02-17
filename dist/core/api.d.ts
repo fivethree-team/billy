@@ -44,4 +44,5 @@ export declare class BillyAPI {
      * @memberof BillyAPI
      */
     promptLaneAndRun(): Promise<void>;
+    getArgs(): string[];
 }

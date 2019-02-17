@@ -1,5 +1,10 @@
 import { BillyAPI } from "./api";
 
+export interface AppOptions {
+    name?: string;
+    description?: string;
+    allowUnknownOptions?: boolean;
+}
 export interface LaneType {
     name: string;
     description: string;
@@ -43,4 +48,15 @@ export interface LaneContext {
     description: string;
     directory: string;
     api: BillyAPI;
+}
+
+export interface History {
+    start: number;
+    end?: number;
+    entries: HistoryEntry[];
+}
+
+export interface HistoryEntry {
+    type: WebHookType | HookType | LaneType | JobType;
+    text?: string;
 }

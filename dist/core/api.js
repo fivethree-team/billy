@@ -93,5 +93,8 @@ class BillyAPI {
             return this.application.promptLaneAndRun();
         });
     }
+    getArgs() {
+        return this.application.getProgram().rawArgs.filter((arg, i) => i > 1);
+    }
 }
 exports.BillyAPI = BillyAPI;
