@@ -50,13 +50,16 @@ export interface LaneContext {
     api: BillyAPI;
 }
 
-export interface History {
-    start: number;
-    end?: number;
+export class History {
+    constructor() {
+        this.entries = [];
+    }
     entries: HistoryEntry[];
 }
 
 export interface HistoryEntry {
-    type: WebHookType | HookType | LaneType | JobType;
-    text?: string;
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled';
+    time: number;
+    name: string;
+    description: string;
 }

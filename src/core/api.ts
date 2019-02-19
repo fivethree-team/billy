@@ -1,5 +1,7 @@
 import { Core } from "./core";
-import { JobType } from "./types";
+import { JobType, HistoryEntry } from "./types";
+import Table from 'cli-table';
+
 
 const scheduler = require('node-schedule');
 const chalk = require('chalk');
@@ -7,6 +9,7 @@ const chalk = require('chalk');
 const express = require('express')();
 const bodyParser = require('body-parser');
 express.use(bodyParser.json());
+
 
 
 /**
@@ -35,6 +38,7 @@ export class BillyAPI {
             .forEach(job => {
                 const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
                     console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
+                    this.application.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Scheduled', time: Date.now() })
                     await this.application.runHook(this.application.getHook('BEFORE_ALL'));
                     await this.application.runLane(job.lane);
                     await this.application.runHook(this.application.getHook('AFTER_ALL'));
@@ -72,6 +76,7 @@ export class BillyAPI {
             .forEach(hook => {
                 express.post(hook.path, async (req, res) => {
                     console.log(`💌  running webhook ${hook.lane.name}`);
+                    this.application.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now() })
                     res.sendStatus(200)
                     await this.application.runLane(hook.lane, req.body);
                 })
@@ -101,5 +106,48 @@ export class BillyAPI {
 
     getArgs(): string[] {
         return this.application.getProgram().rawArgs.filter((arg, i) => i > 1);
+    }
+
+    getHistory(): HistoryEntry[] {
+        return this.application.getHistory();
+    }
+
+    printHistory() {
+        const history = this.getHistory();
+        const table = new Table({
+
+            head: ["Number", "Name", "Type", "Description"],
+            chars: {
+                'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗'
+                , 'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝'
+                , 'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼'
+                , 'right': '║', 'right-mid': '╢', 'middle': '│'
+            }
+        });
+        history.forEach((h, index) => table.push([`${index + 1}`, h.name, h.type, h.description || '']));
+        console.log('The application started at ' + new Date(history[0].time));
+        console.log(table.toString());
+        console.log('The application took ' + this.msToHuman(history[history.length - 1].time - history[0].time));
+    }
+
+    private msToHuman(millisec) {
+
+        const seconds = (millisec / 1000);
+
+        const minutes = (millisec / (1000 * 60));
+
+        const hours = (millisec / (1000 * 60 * 60));
+
+        const days = (millisec / (1000 * 60 * 60 * 24));
+
+        if (seconds < 60) {
+            return seconds.toFixed(1) + " Sec";
+        } else if (minutes < 60) {
+            return minutes.toFixed(1)  + " Min";
+        } else if (hours < 24) {
+            return hours.toFixed(1)  + " Hrs";
+        } else {
+            return days.toFixed(1)  + " Days"
+        }
     }
 }

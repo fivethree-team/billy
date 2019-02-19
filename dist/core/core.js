@@ -17,6 +17,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const types_1 = require("./types");
 const typescript_ioc_1 = require("typescript-ioc");
 const cli_table_1 = __importDefault(require("cli-table"));
 const util_1 = require("./util");
@@ -68,6 +69,7 @@ let Core = class Core {
      */
     run() {
         return __awaiter(this, void 0, void 0, function* () {
+            this.history = new types_1.History();
             const startupHook = this.getHook('ON_START');
             this.program = this.initProgram(this.config.allowUnknownOptions);
             this.initParameters(this.program);
@@ -363,6 +365,7 @@ let Core = class Core {
                 return;
             }
             const params = yield this.getArgs(lane);
+            this.addToHistory({ type: 'Hook', time: Date.now(), name: lane.name, description: lane.description });
             try {
                 const ret = yield this.instance[lane.name](...params, ...args);
                 return ret;
@@ -375,6 +378,12 @@ let Core = class Core {
     }
     getProgram() {
         return this.program;
+    }
+    addToHistory(...historyItem) {
+        this.history.entries.push(...historyItem);
+    }
+    getHistory() {
+        return this.history.entries;
     }
 };
 Core = __decorate([

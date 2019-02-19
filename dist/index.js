@@ -4,6 +4,7 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./core/core"));
+__export(require("./core/types"));
 __export(require("./core/decorators"));
 __export(require("./core/api"));
 var typescript_mix_1 = require("typescript-mix");

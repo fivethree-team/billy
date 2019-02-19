@@ -46,12 +46,13 @@ export interface LaneContext {
     directory: string;
     api: BillyAPI;
 }
-export interface History {
-    start: number;
-    end?: number;
+export declare class History {
+    constructor();
     entries: HistoryEntry[];
 }
 export interface HistoryEntry {
-    type: WebHookType | HookType | LaneType | JobType;
-    text?: string;
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled';
+    time: number;
+    name: string;
+    description: string;
 }

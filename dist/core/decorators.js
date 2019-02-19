@@ -46,6 +46,13 @@ let CoreDecorators = class CoreDecorators {
                 this.app.instance[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
                     yield this.app.runHook(this.app.getHook('BEFORE_EACH'));
                     console.log(chalk.green(`taking lane ${lane.name}`));
+                    const historyEntry = {
+                        type: 'Lane',
+                        time: Date.now(),
+                        name: lane.name,
+                        description: lane.description
+                    };
+                    this.app.addToHistory(historyEntry);
                     const ret = yield func(...args);
                     yield this.app.runHook(this.app.getHook('AFTER_EACH'));
                     return ret;

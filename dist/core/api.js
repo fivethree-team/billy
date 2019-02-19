@@ -7,7 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const cli_table_1 = __importDefault(require("cli-table"));
 const scheduler = require('node-schedule');
 const chalk = require('chalk');
 const express = require('express')();
@@ -35,6 +39,7 @@ class BillyAPI {
             .forEach(job => {
             const instance = scheduler.scheduleJob(job.schedule, (fireDate) => __awaiter(this, void 0, void 0, function* () {
                 console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
+                this.application.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Scheduled', time: Date.now() });
                 yield this.application.runHook(this.application.getHook('BEFORE_ALL'));
                 yield this.application.runLane(job.lane);
                 yield this.application.runHook(this.application.getHook('AFTER_ALL'));
@@ -68,6 +73,7 @@ class BillyAPI {
             .forEach(hook => {
             express.post(hook.path, (req, res) => __awaiter(this, void 0, void 0, function* () {
                 console.log(`💌  running webhook ${hook.lane.name}`);
+                this.application.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now() });
                 res.sendStatus(200);
                 yield this.application.runLane(hook.lane, req.body);
             }));
@@ -95,6 +101,43 @@ class BillyAPI {
     }
     getArgs() {
         return this.application.getProgram().rawArgs.filter((arg, i) => i > 1);
+    }
+    getHistory() {
+        return this.application.getHistory();
+    }
+    printHistory() {
+        const history = this.getHistory();
+        const table = new cli_table_1.default({
+            head: ["Number", "Name", "Type", "Description"],
+            chars: {
+                'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
+                'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
+                'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼',
+                'right': '║', 'right-mid': '╢', 'middle': '│'
+            }
+        });
+        history.forEach((h, index) => table.push([`${index + 1}`, h.name, h.type, h.description || '']));
+        console.log('The application started at ' + new Date(history[0].time));
+        console.log(table.toString());
+        console.log('The application took ' + this.msToHuman(history[history.length - 1].time - history[0].time));
+    }
+    msToHuman(millisec) {
+        const seconds = (millisec / 1000);
+        const minutes = (millisec / (1000 * 60));
+        const hours = (millisec / (1000 * 60 * 60));
+        const days = (millisec / (1000 * 60 * 60 * 24));
+        if (seconds < 60) {
+            return seconds.toFixed(1) + " Sec";
+        }
+        else if (minutes < 60) {
+            return minutes.toFixed(1) + " Min";
+        }
+        else if (hours < 24) {
+            return hours.toFixed(1) + " Hrs";
+        }
+        else {
+            return days.toFixed(1) + " Days";
+        }
     }
 }
 exports.BillyAPI = BillyAPI;

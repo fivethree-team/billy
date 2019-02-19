@@ -1,4 +1,4 @@
-import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions } from './types';
+import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions, HistoryEntry } from './types';
 /**
  * The Core Application
  *
@@ -144,4 +144,6 @@ export declare class Core {
      */
     runHook(lane: LaneType, ...args: any[]): Promise<any>;
     getProgram(): any;
+    addToHistory(...historyItem: HistoryEntry[]): void;
+    getHistory(): HistoryEntry[];
 }

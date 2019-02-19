@@ -1,4 +1,4 @@
-import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions } from './types';
+import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions, HistoryEntry } from './types';
 import { Provided, Provider, Singleton } from 'typescript-ioc';
 import Table from 'cli-table';
 import { parseJSON, processAsyncArray } from './util';
@@ -48,6 +48,7 @@ export class Core {
      * @memberof Core
      */
     async run() {
+        this.history = new History();
         const startupHook = this.getHook('ON_START');
         this.program = this.initProgram(this.config.allowUnknownOptions);
         this.initParameters(this.program);
@@ -348,7 +349,7 @@ export class Core {
         if (!lane) { return }
 
         const params = await this.getArgs(lane);
-
+        this.addToHistory({ type: 'Hook', time: Date.now(), name: lane.name, description: lane.description })
         try {
             const ret = await this.instance[lane.name](...params, ...args)
             return ret;
@@ -361,6 +362,14 @@ export class Core {
 
     getProgram() {
         return this.program;
+    }
+
+    addToHistory(...historyItem: HistoryEntry[]) {
+        this.history.entries.push(...historyItem);
+    }
+
+    getHistory(): HistoryEntry[] {
+        return this.history.entries;
     }
 }
 

@@ -1,5 +1,5 @@
 import { Singleton, Inject } from "typescript-ioc";
-import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions } from "./types";
+import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HistoryEntry } from "./types";
 import { Core } from "./core";
 const chalk = require('chalk');
 
@@ -36,6 +36,16 @@ class CoreDecorators {
                     this.app.instance[lane.name] = async (...args) => {
                         await this.app.runHook(this.app.getHook('BEFORE_EACH'));
                         console.log(chalk.green(`taking lane ${lane.name}`));
+
+
+                        const historyEntry: HistoryEntry = {
+                            type: 'Lane',
+                            time: Date.now(),
+                            name: lane.name,
+                            description: lane.description
+                        }
+
+                        this.app.addToHistory(historyEntry)
                         const ret = await func(...args);
                         await this.app.runHook(this.app.getHook('AFTER_EACH'));
                         return ret;

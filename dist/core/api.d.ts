@@ -1,5 +1,5 @@
 import { Core } from "./core";
-import { JobType } from "./types";
+import { JobType, HistoryEntry } from "./types";
 /**
  * The BillyApi Class can be used to interact with the core application.
  * It is used to start the scheduling of Scheduled Lanes and make the Webhooks start listening.
@@ -45,4 +45,7 @@ export declare class BillyAPI {
      */
     promptLaneAndRun(): Promise<void>;
     getArgs(): string[];
+    getHistory(): HistoryEntry[];
+    printHistory(): void;
+    private msToHuman;
 }
