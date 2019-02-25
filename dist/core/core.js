@@ -286,7 +286,6 @@ let Core = class Core {
             }
             let ret = [];
             yield util_1.processAsyncArray(params, (p) => __awaiter(this, void 0, void 0, function* () {
-                console.log('process param', p);
                 if (p.value) {
                     return ret.push(p);
                 }

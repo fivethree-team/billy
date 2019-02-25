@@ -40,7 +40,6 @@ let CoreDecorators = class CoreDecorators {
         return (target) => {
             //this is called once the app is done loading
             this.app.instance = new target();
-            console.log(this.app.actions);
             this.app.lanes
                 .forEach((lane, index) => __awaiter(this, void 0, void 0, function* () {
                 const func = this.app.instance[lane.name].bind(this.app.instance);
