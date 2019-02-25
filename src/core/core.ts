@@ -1,4 +1,4 @@
-import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions, HistoryEntry } from './types';
+import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions, HistoryEntry, ActionType } from './types';
 import { Provided, Provider, Singleton } from 'typescript-ioc';
 import Table from 'cli-table';
 import { parseJSON, processAsyncArray } from './util';
@@ -30,8 +30,7 @@ export class Core {
     jobs: JobType[] = [];
     hooks: HookType[] = [];
     webhooks: WebHookType[] = [];
-    actions = [];
-    plugins = [];
+    actions: ActionType[] = [];
     params: ParamType[] = [];
     meta: MethodMeta[] = [];
     appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
@@ -270,7 +269,6 @@ export class Core {
         }
         let ret: ParamType[] = [];
         await processAsyncArray(params, async (p: ParamType) => {
-            console.log('process param', p);
             if (p.value) { return ret.push(p) }
             if (p.optional) {
                 p.value = null;

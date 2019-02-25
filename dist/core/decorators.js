@@ -40,6 +40,7 @@ let CoreDecorators = class CoreDecorators {
         return (target) => {
             //this is called once the app is done loading
             this.app.instance = new target();
+            console.log(this.app.actions);
             this.app.lanes
                 .forEach((lane, index) => __awaiter(this, void 0, void 0, function* () {
                 const func = this.app.instance[lane.name].bind(this.app.instance);
@@ -55,6 +56,21 @@ let CoreDecorators = class CoreDecorators {
                     this.app.addToHistory(historyEntry);
                     const ret = yield func(...args);
                     yield this.app.runHook(this.app.getHook('AFTER_EACH'));
+                    return ret;
+                });
+            }));
+            this.app.actions
+                .forEach((action, index) => __awaiter(this, void 0, void 0, function* () {
+                const func = this.app.instance[action.name].bind(this.app.instance);
+                this.app.instance[action.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
+                    const historyEntry = {
+                        type: 'Action',
+                        time: Date.now(),
+                        name: action.name,
+                        description: action.description
+                    };
+                    this.app.addToHistory(historyEntry);
+                    const ret = yield func(...args);
                     return ret;
                 });
             }));
@@ -122,7 +138,6 @@ let CoreDecorators = class CoreDecorators {
      */
     registerPlugins(name) {
         return (target) => {
-            this.app.plugins.push(name);
         };
     }
     /**
@@ -134,7 +149,7 @@ let CoreDecorators = class CoreDecorators {
      */
     registerActions(description) {
         return (target, propertyKey, descriptor) => {
-            this.app.actions.push(propertyKey);
+            this.app.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
         };
     }
     /**

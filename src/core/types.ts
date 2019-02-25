@@ -19,6 +19,7 @@ export interface HookType {
     name: HookName;
     lane: LaneType;
 }
+
 export interface ParamType {
     name: string;
     description: string;
@@ -58,8 +59,14 @@ export class History {
 }
 
 export interface HistoryEntry {
-    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled';
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
     time: number;
     name: string;
+    description: string;
+}
+
+export interface ActionType {
+    name: string;
+    plugin: string;
     description: string;
 }

@@ -5,6 +5,6 @@ export declare function Scheduled(schedule: string | any): (target: Object, prop
 export declare function Hook(hook: HookName): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Webhook(path: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Plugin(name: string): (target: Function) => void;
-export declare function Action(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function Action(description: string): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function param(options: ParamOptions | string): any;
 export declare function context(): (target: Object, propertyKey: string, parameterIndex: number) => void;

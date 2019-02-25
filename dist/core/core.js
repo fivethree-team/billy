@@ -55,7 +55,6 @@ let Core = class Core {
         this.hooks = [];
         this.webhooks = [];
         this.actions = [];
-        this.plugins = [];
         this.params = [];
         this.meta = [];
         this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');

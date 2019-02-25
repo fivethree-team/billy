@@ -1,5 +1,5 @@
 import { Singleton, Inject } from "typescript-ioc";
-import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HistoryEntry } from "./types";
+import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HistoryEntry, ActionType } from "./types";
 import { Core } from "./core";
 const chalk = require('chalk');
 
@@ -48,6 +48,24 @@ class CoreDecorators {
                         this.app.addToHistory(historyEntry)
                         const ret = await func(...args);
                         await this.app.runHook(this.app.getHook('AFTER_EACH'));
+                        return ret;
+                    }
+
+                });
+
+            this.app.actions
+                .forEach(async (action: ActionType, index) => {
+                    const func = this.app.instance[action.name].bind(this.app.instance)
+                    this.app.instance[action.name] = async (...args) => {
+                        const historyEntry: HistoryEntry = {
+                            type: 'Action',
+                            time: Date.now(),
+                            name: action.name,
+                            description: action.description
+                        }
+
+                        this.app.addToHistory(historyEntry)
+                        const ret = await func(...args);
                         return ret;
                     }
 
@@ -122,7 +140,7 @@ class CoreDecorators {
     registerPlugins(name: string) {
 
         return (target: Function) => {
-            this.app.plugins.push(name);
+
         }
     }
 
@@ -134,8 +152,8 @@ class CoreDecorators {
      * @memberof CoreDecorators
      */
     registerActions(description: string) {
-        return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            this.app.actions.push(propertyKey);
+        return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+            this.app.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
         }
     }
 

@@ -1,4 +1,4 @@
-import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions, HistoryEntry } from './types';
+import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions, HistoryEntry, ActionType } from './types';
 /**
  * The Core Application
  *
@@ -13,8 +13,7 @@ export declare class Core {
     jobs: JobType[];
     hooks: HookType[];
     webhooks: WebHookType[];
-    actions: any[];
-    plugins: any[];
+    actions: ActionType[];
     params: ParamType[];
     meta: MethodMeta[];
     appDir: any;

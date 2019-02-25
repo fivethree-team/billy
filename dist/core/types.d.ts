@@ -51,8 +51,13 @@ export declare class History {
     entries: HistoryEntry[];
 }
 export interface HistoryEntry {
-    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled';
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
     time: number;
     name: string;
+    description: string;
+}
+export interface ActionType {
+    name: string;
+    plugin: string;
     description: string;
 }
