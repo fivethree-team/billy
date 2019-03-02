@@ -33,7 +33,7 @@ export class Core {
     actions: ActionType[] = [];
     params: ParamType[] = [];
     contexts: ContextType[] = [];
-    private appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
+    private appDir = path.resolve(path.dirname(require.main.filename) + '/..');
     private program;
     private config: AppOptions = {};
     private history: History;

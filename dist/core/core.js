@@ -57,7 +57,7 @@ let Core = class Core {
         this.actions = [];
         this.params = [];
         this.contexts = [];
-        this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
+        this.appDir = path.resolve(path.dirname(require.main.filename) + '/..');
         this.config = {};
     }
     /**
