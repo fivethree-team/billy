@@ -1,4 +1,4 @@
-import { BillyAPI } from "./api";
+import { CoreApi } from "./api";
 
 export interface AppOptions {
     name?: string;
@@ -7,6 +7,12 @@ export interface AppOptions {
 }
 export interface LaneType {
     name: string;
+    description: string;
+}
+
+export interface ActionType {
+    name: string;
+    plugin: string;
     description: string;
 }
 export interface JobType {
@@ -22,10 +28,10 @@ export interface HookType {
 
 export interface ParamType {
     name: string;
+    propertyKey: string;
     description: string;
     value?: string;
     optional?: boolean;
-    lane?: string;
     index: number;
 }
 export interface ParamOptions {
@@ -37,18 +43,24 @@ export interface WebHookType {
     path: string;
     lane: LaneType;
 }
-export interface MethodMeta {
+export interface ContextType {
     propertyKey: string;
     contextIndex: number;
 }
 
 export type HookName = 'ON_START' | 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
 
-export interface LaneContext {
+export const onStart: HookName = 'ON_START';
+export const onError: HookName = 'ERROR';
+export const beforeAll: HookName = 'BEFORE_ALL';
+export const afterAll: HookName = 'AFTER_ALL';
+export const beforeEach: HookName = 'BEFORE_EACH';
+export const afterEach: HookName = 'AFTER_EACH';
+export interface Context {
     name: string;
     description: string;
     directory: string;
-    api: BillyAPI;
+    api: CoreApi;
 }
 
 export class History {
@@ -59,14 +71,8 @@ export class History {
 }
 
 export interface HistoryEntry {
-    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
     time: number;
     name: string;
-    description: string;
-}
-
-export interface ActionType {
-    name: string;
-    plugin: string;
     description: string;
 }

@@ -8,71 +8,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_ioc_1 = require("typescript-ioc");
 const core_1 = require("./core");
-const chalk = require('chalk');
 /**
  * adds metadata to the core application and runs it
  *
- * @class CoreDecorators
+ * @class CoreFactory
  */
-let CoreDecorators = class CoreDecorators {
+let CoreFactory = class CoreFactory {
     /**
-     * add hooks to lanes and run the app
      *
-     * @memberof CoreDecorators
+     *
+     * @memberof CoreFactory
      */
     startApp(config) {
         if (config) {
-            this.app.config.allowUnknownOptions = config.allowUnknownOptions;
-            this.app.config.name = config.name;
-            this.app.config.description = config.description;
+            this.app.setConfig(config);
         }
         return (target) => {
             //this is called once the app is done loading
-            this.app.instance = new target();
-            this.app.lanes
-                .forEach((lane, index) => __awaiter(this, void 0, void 0, function* () {
-                const func = this.app.instance[lane.name].bind(this.app.instance);
-                this.app.instance[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
-                    yield this.app.runHook(this.app.getHook('BEFORE_EACH'));
-                    console.log(chalk.green(`taking lane ${lane.name}`));
-                    const historyEntry = {
-                        type: 'Lane',
-                        time: Date.now(),
-                        name: lane.name,
-                        description: lane.description
-                    };
-                    this.app.addToHistory(historyEntry);
-                    const ret = yield func(...args);
-                    yield this.app.runHook(this.app.getHook('AFTER_EACH'));
-                    return ret;
-                });
-            }));
-            this.app.actions
-                .forEach((action, index) => __awaiter(this, void 0, void 0, function* () {
-                const func = this.app.instance[action.name].bind(this.app.instance);
-                this.app.instance[action.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
-                    const historyEntry = {
-                        type: 'Action',
-                        time: Date.now(),
-                        name: action.name,
-                        description: action.description
-                    };
-                    this.app.addToHistory(historyEntry);
-                    const ret = yield func(...args);
-                    return ret;
-                });
-            }));
+            this.app.init(target);
             this.app.run();
         };
     }
@@ -81,7 +37,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {string} description
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerLanes(description) {
         return (target, propertyKey, descriptor) => {
@@ -94,7 +50,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {(string | any)} schedule
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerScheduled(schedule) {
         return (target, propertyKey, descriptor) => {
@@ -107,7 +63,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {HookName} name
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerHooks(name) {
         return (target, propertyKey, descriptor) => {
@@ -120,7 +76,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {string} path
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerWebhooks(path) {
         return (target, propertyKey, descriptor) => {
@@ -133,7 +89,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {string} name
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerPlugins(name) {
         return (target) => {
@@ -144,7 +100,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {string} description
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerActions(description) {
         return (target, propertyKey, descriptor) => {
@@ -156,7 +112,7 @@ let CoreDecorators = class CoreDecorators {
      *
      * @param {(ParamOptions | string)} options
      * @returns {*}
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerParams(options) {
         return (target, propertyKey, parameterIndex) => {
@@ -165,7 +121,7 @@ let CoreDecorators = class CoreDecorators {
                     index: parameterIndex,
                     description: `Enter ${options}`,
                     name: options,
-                    lane: propertyKey
+                    propertyKey: propertyKey
                 };
                 this.app.params.push(param);
             }
@@ -174,7 +130,7 @@ let CoreDecorators = class CoreDecorators {
                     index: parameterIndex,
                     description: options.description || `Enter ${options.name}`,
                     name: options.name,
-                    lane: propertyKey,
+                    propertyKey: propertyKey,
                     optional: options.optional
                 };
                 this.app.params.push(param);
@@ -185,55 +141,54 @@ let CoreDecorators = class CoreDecorators {
      * register LaneContext injections
      *
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerContextInjections() {
         return (target, propertyKey, parameterIndex) => {
-            this.app.meta.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+            this.app.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
         };
     }
 };
 __decorate([
     typescript_ioc_1.Inject,
     __metadata("design:type", core_1.Core)
-], CoreDecorators.prototype, "app", void 0);
-CoreDecorators = __decorate([
+], CoreFactory.prototype, "app", void 0);
+CoreFactory = __decorate([
     typescript_ioc_1.Singleton
-], CoreDecorators);
-//export Decorator factories here
+], CoreFactory);
 function App(config) {
-    return new CoreDecorators().startApp(config);
+    return new CoreFactory().startApp(config);
 }
 exports.App = App;
 function Lane(description) {
-    return new CoreDecorators().registerLanes(description);
+    return new CoreFactory().registerLanes(description);
 }
 exports.Lane = Lane;
 function Scheduled(schedule) {
-    return new CoreDecorators().registerScheduled(schedule);
+    return new CoreFactory().registerScheduled(schedule);
 }
 exports.Scheduled = Scheduled;
 function Hook(hook) {
-    return new CoreDecorators().registerHooks(hook);
+    return new CoreFactory().registerHooks(hook);
 }
 exports.Hook = Hook;
 function Webhook(path) {
-    return new CoreDecorators().registerWebhooks(path);
+    return new CoreFactory().registerWebhooks(path);
 }
 exports.Webhook = Webhook;
 function Plugin(name) {
-    return new CoreDecorators().registerPlugins(name);
+    return new CoreFactory().registerPlugins(name);
 }
 exports.Plugin = Plugin;
 function Action(description) {
-    return new CoreDecorators().registerActions(description);
+    return new CoreFactory().registerActions(description);
 }
 exports.Action = Action;
 function param(options) {
-    return new CoreDecorators().registerParams(options);
+    return new CoreFactory().registerParams(options);
 }
 exports.param = param;
 function context() {
-    return new CoreDecorators().registerContextInjections();
+    return new CoreFactory().registerContextInjections();
 }
 exports.context = context;

@@ -1,4 +1,4 @@
-import { LaneType, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, AppOptions, HistoryEntry, ActionType } from './types';
+import { LaneType, JobType, HookType, WebHookType, ParamType, HookName, AppOptions, HistoryEntry, ActionType, ContextType } from './types';
 /**
  * The Core Application
  *
@@ -15,12 +15,41 @@ export declare class Core {
     webhooks: WebHookType[];
     actions: ActionType[];
     params: ParamType[];
-    meta: MethodMeta[];
-    appDir: any;
-    instance: any;
+    contexts: ContextType[];
+    private appDir;
     private program;
-    config: AppOptions;
+    private config;
     private history;
+    /**
+     * The Application instance
+     *
+     * @type {*}
+     * @memberof Core
+     */
+    private application;
+    /**
+     * initialize the @App Decorator target (application)
+     *
+     * @param {*} target @App Decorator target
+     * @memberof Core
+     */
+    init(target: any): any;
+    /**
+     *  * wrap every lane with the before each and after each hook.
+     *  * add taking lane output before execution.
+     *  * add to history
+     *
+     * @private
+     * @memberof Core
+     */
+    private initLanes;
+    /**
+    *  * add to history
+    *
+    * @private
+    * @memberof Core
+    */
+    private initActions;
     /**
      * This is called once the AppDecorator is assigned.
      * At this point all the lanes, plugins and params have been loaded into core
@@ -28,7 +57,6 @@ export declare class Core {
      * @memberof Core
      */
     run(): Promise<void>;
-    promptLaneAndRun(): Promise<void>;
     /**
      * This will initialize the cli using commander.js
      *
@@ -40,6 +68,12 @@ export declare class Core {
      * @memberof Core
      */
     private initProgram;
+    /**
+    * Present lane selection table and wait for user input. Then start the program.
+    *
+    * @memberof Core
+    */
+    promptLaneAndRun(): Promise<void>;
     /**
      * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
      * If values have been passed in, the values will be stored in the ParamType array
@@ -132,7 +166,7 @@ export declare class Core {
      * @returns {LaneContext}
      * @memberof Core
      */
-    private getLaneContext;
+    private getContext;
     /**
      * run a specified hook
      *
@@ -145,4 +179,6 @@ export declare class Core {
     getProgram(): any;
     addToHistory(...historyItem: HistoryEntry[]): void;
     getHistory(): HistoryEntry[];
+    getApplication(): any;
+    setConfig(config: AppOptions): any;
 }

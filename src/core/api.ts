@@ -13,13 +13,13 @@ express.use(bodyParser.json());
 
 
 /**
- * The BillyApi Class can be used to interact with the core application.
+ * The CoreApi Class can be used to interact with the core application.
  * It is used to start the scheduling of Scheduled Lanes and make the Webhooks start listening.
  *
  * @export
- * @class BillyAPI
+ * @class CoreApi
  */
-export class BillyAPI {
+export class CoreApi {
 
     private application: Core;
 
@@ -31,7 +31,7 @@ export class BillyAPI {
      * start all the scheduled lanes in your billy application
      *
      * @returns {JobType[]}
-     * @memberof BillyAPI
+     * @memberof CoreApi
      */
     scheduleAll(): JobType[] {
         this.application.jobs
@@ -52,7 +52,7 @@ export class BillyAPI {
      * cancel all scheduled lanes
      *
      * @returns {JobType[]}
-     * @memberof BillyAPI
+     * @memberof CoreApi
      */
     cancelScheduled(): JobType[] {
         this.application.jobs
@@ -67,7 +67,7 @@ export class BillyAPI {
      * start the webhooks server
      *
      * @param {number} [port=7777]
-     * @memberof BillyAPI
+     * @memberof CoreApi
      */
     startWebhooks(port = 7777) {
         console.log(chalk.green(`starting webooks server on port ${port}...`));
@@ -88,7 +88,7 @@ export class BillyAPI {
     /**
      * Stop webhooks server
      *
-     * @memberof BillyAPI
+     * @memberof CoreApi
      */
     stopWebhooks() {
         express.close();
@@ -98,7 +98,7 @@ export class BillyAPI {
      * Presents the Standard Billy Lane Selection Screen
      *
      * @returns
-     * @memberof BillyAPI
+     * @memberof CoreApi
      */
     async promptLaneAndRun() {
         return this.application.promptLaneAndRun();

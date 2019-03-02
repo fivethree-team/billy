@@ -1,8 +1,8 @@
-import { LaneType, LaneContext, JobType, HookType, WebHookType, ParamType, MethodMeta, HookName, History, AppOptions, HistoryEntry, ActionType } from './types';
+import { LaneType, Context, JobType, HookType, WebHookType, ParamType, HookName, History, AppOptions, HistoryEntry, ActionType, ContextType } from './types';
 import { Provided, Provider, Singleton } from 'typescript-ioc';
 import Table from 'cli-table';
 import { parseJSON, processAsyncArray } from './util';
-import { BillyAPI } from './api';
+import { CoreApi } from './api';
 require('dotenv').config();
 
 const inquirer = require('inquirer');
@@ -32,12 +32,91 @@ export class Core {
     webhooks: WebHookType[] = [];
     actions: ActionType[] = [];
     params: ParamType[] = [];
-    meta: MethodMeta[] = [];
-    appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
-    instance: any;
+    contexts: ContextType[] = [];
+    private appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
     private program;
-    config: AppOptions = {};
+    private config: AppOptions = {};
     private history: History;
+
+    /**
+     * The Application instance
+     *
+     * @type {*}
+     * @memberof Core
+     */
+    private application: any;
+
+    /**
+     * initialize the @App Decorator target (application)
+     *
+     * @param {*} target @App Decorator target
+     * @memberof Core
+     */
+    init(target): any {
+        this.application = new target();
+        this.initLanes();
+        this.initActions();
+    }
+
+    /**
+     *  * wrap every lane with the before each and after each hook.
+     *  * add taking lane output before execution.
+     *  * add to history
+     *
+     * @private
+     * @memberof Core
+     */
+    private initLanes() {
+        this.lanes
+            .forEach(async (lane: LaneType) => {
+                const originalLane = this.application[lane.name].bind(this.application)
+                //replace original Lane with wrapped one
+                this.application[lane.name] = async (...args) => {
+
+                    await this.runHook(this.getHook('BEFORE_EACH'));
+                    console.log(chalk.green(`taking lane ${lane.name}`));
+
+                    const historyEntry: HistoryEntry = {
+                        type: 'Lane',
+                        time: Date.now(),
+                        name: lane.name,
+                        description: lane.description
+                    }
+
+                    this.addToHistory(historyEntry)
+                    const ret = await originalLane(...args);
+                    await this.runHook(this.getHook('AFTER_EACH'));
+                    return ret;
+                }
+
+            });
+    }
+    /**
+    *  * add to history
+    *
+    * @private
+    * @memberof Core
+    */
+    private initActions(): any {
+        this.actions
+            .forEach(async (action: ActionType) => {
+                const originalAction = this.application[action.name].bind(this.application)
+                this.application[action.name] = (...args) => {
+
+                    const historyEntry: HistoryEntry = {
+                        type: 'Action',
+                        time: Date.now(),
+                        name: action.name,
+                        description: action.description
+                    }
+
+                    this.addToHistory(historyEntry)
+                    return originalAction(...args);
+                    
+                }
+
+            });
+    }
 
 
     /**
@@ -62,12 +141,6 @@ export class Core {
         } else {
             await this.runMultipleLanes(lanes);
         }
-    }
-
-    async promptLaneAndRun() {
-        await this.presentLanes();
-        const lane = await this.promptLane();
-        await this.startProgram(lane);
     }
 
     /**
@@ -96,6 +169,17 @@ export class Core {
         program.parse(process.argv);
 
         return program;
+    }
+
+    /**
+    * Present lane selection table and wait for user input. Then start the program.
+    *
+    * @memberof Core
+    */
+    async promptLaneAndRun() {
+        await this.presentLanes();
+        const lane = await this.promptLane();
+        await this.startProgram(lane);
     }
 
     /**
@@ -216,7 +300,7 @@ export class Core {
         const params = await this.getArgs(lane);
 
         try {
-            const ret = await this.instance[lane.name](...params, ...args)
+            const ret = await this.application[lane.name](...params, ...args)
             return ret;
         } catch (err) {
             await this.runHook(this.getHook('ERROR'), ...args, err);
@@ -232,9 +316,9 @@ export class Core {
      * @returns the params, sorted as they are injected into the lane via @param and @context
      * @memberof Core
      */
-    private async getArgs(lane: LaneType) {
-        const contextMeta = this.meta.find(m => m.propertyKey === lane.name);
-        const params = await this.resolveParams(lane);
+    private async getArgs(method: LaneType) {
+        const contextMeta = this.contexts.find(m => m.propertyKey === method.name);
+        const params = await this.resolveParams(method);
 
         const sortedParams: any[] = [];
 
@@ -243,7 +327,7 @@ export class Core {
         })
 
         if (contextMeta) {
-            sortedParams.splice(contextMeta.contextIndex, 0, this.getLaneContext(lane))
+            sortedParams.splice(contextMeta.contextIndex, 0, this.getContext(method))
         }
 
         return sortedParams;
@@ -258,9 +342,9 @@ export class Core {
      * @returns {Promise<ParamType[]>}
      * @memberof Core
      */
-    private async resolveParams(lane: LaneType): Promise<ParamType[]> {
+    private async resolveParams(method:LaneType): Promise<ParamType[]> {
         const params = this.params
-            .filter(param => param.lane === lane.name)
+            .filter(param => param.propertyKey === method.name)
             .sort((a, b) => {
                 return a.index - b.index;
             });
@@ -325,12 +409,12 @@ export class Core {
      * @returns {LaneContext}
      * @memberof Core
      */
-    private getLaneContext(lane: LaneType): LaneContext {
-        const context: LaneContext = {
+    private getContext(lane: LaneType): Context {
+        const context: Context = {
             name: lane.name,
             description: lane.description,
             directory: this.appDir,
-            api: new BillyAPI(this)
+            api: new CoreApi(this)
         }
         return context;
     }
@@ -349,7 +433,7 @@ export class Core {
         const params = await this.getArgs(lane);
         this.addToHistory({ type: 'Hook', time: Date.now(), name: lane.name, description: lane.description })
         try {
-            const ret = await this.instance[lane.name](...params, ...args)
+            const ret = await this.application[lane.name](...params, ...args)
             return ret;
         } catch (err) {
             await this.runHook(this.getHook('ERROR'), ...args, err);
@@ -368,6 +452,16 @@ export class Core {
 
     getHistory(): HistoryEntry[] {
         return this.history.entries;
+    }
+
+    getApplication() {
+        return this.application;
+    }
+
+    setConfig(config: AppOptions): any {
+        this.config.allowUnknownOptions = config.allowUnknownOptions;
+        this.config.name = config.name;
+        this.config.description = config.description;
     }
 }
 

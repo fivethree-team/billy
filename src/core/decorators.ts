@@ -1,76 +1,31 @@
 import { Singleton, Inject } from "typescript-ioc";
-import { LaneType, JobType, HookName, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HistoryEntry, ActionType } from "./types";
+import { LaneType, JobType, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HookName } from "./types";
 import { Core } from "./core";
-const chalk = require('chalk');
-
 
 /**
  * adds metadata to the core application and runs it
  *
- * @class CoreDecorators
+ * @class CoreFactory
  */
 @Singleton
-class CoreDecorators {
+class CoreFactory {
 
     @Inject app: Core;
 
     /**
-     * add hooks to lanes and run the app
+     * 
      *
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     startApp(config?: AppOptions) {
 
         if (config) {
-            this.app.config.allowUnknownOptions = config.allowUnknownOptions;
-            this.app.config.name = config.name;
-            this.app.config.description = config.description;
+            this.app.setConfig(config);
         }
 
         return (target) => {
             //this is called once the app is done loading
-            this.app.instance = new target();
-            this.app.lanes
-                .forEach(async (lane: LaneType, index) => {
-                    const func = this.app.instance[lane.name].bind(this.app.instance)
-                    this.app.instance[lane.name] = async (...args) => {
-                        await this.app.runHook(this.app.getHook('BEFORE_EACH'));
-                        console.log(chalk.green(`taking lane ${lane.name}`));
-
-
-                        const historyEntry: HistoryEntry = {
-                            type: 'Lane',
-                            time: Date.now(),
-                            name: lane.name,
-                            description: lane.description
-                        }
-
-                        this.app.addToHistory(historyEntry)
-                        const ret = await func(...args);
-                        await this.app.runHook(this.app.getHook('AFTER_EACH'));
-                        return ret;
-                    }
-
-                });
-
-            this.app.actions
-                .forEach(async (action: ActionType, index) => {
-                    const func = this.app.instance[action.name].bind(this.app.instance)
-                    this.app.instance[action.name] = async (...args) => {
-                        const historyEntry: HistoryEntry = {
-                            type: 'Action',
-                            time: Date.now(),
-                            name: action.name,
-                            description: action.description
-                        }
-
-                        this.app.addToHistory(historyEntry)
-                        const ret = await func(...args);
-                        return ret;
-                    }
-
-                });
-
+            this.app.init(target);
             this.app.run();
         }
     }
@@ -80,7 +35,7 @@ class CoreDecorators {
      *
      * @param {string} description
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerLanes(description: string) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -94,7 +49,7 @@ class CoreDecorators {
      *
      * @param {(string | any)} schedule
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerScheduled(schedule: string | any) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -108,7 +63,7 @@ class CoreDecorators {
      *
      * @param {HookName} name
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerHooks(name: HookName) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -121,7 +76,7 @@ class CoreDecorators {
      *
      * @param {string} path
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerWebhooks(path: string) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -135,7 +90,7 @@ class CoreDecorators {
      *
      * @param {string} name
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerPlugins(name: string) {
 
@@ -149,7 +104,7 @@ class CoreDecorators {
      *
      * @param {string} description
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerActions(description: string) {
         return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -162,7 +117,7 @@ class CoreDecorators {
      *
      * @param {(ParamOptions | string)} options
      * @returns {*}
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerParams(options: ParamOptions | string): any {
         return (target: Object, propertyKey: string, parameterIndex: number) => {
@@ -171,7 +126,7 @@ class CoreDecorators {
                     index: parameterIndex,
                     description: `Enter ${options}`,
                     name: options,
-                    lane: propertyKey
+                    propertyKey: propertyKey
                 }
                 this.app.params.push(param);
             } else {
@@ -179,7 +134,7 @@ class CoreDecorators {
                     index: parameterIndex,
                     description: options.description || `Enter ${options.name}`,
                     name: options.name,
-                    lane: propertyKey,
+                    propertyKey: propertyKey,
                     optional: options.optional
                 }
                 this.app.params.push(param);
@@ -191,11 +146,11 @@ class CoreDecorators {
      * register LaneContext injections
      *
      * @returns
-     * @memberof CoreDecorators
+     * @memberof CoreFactory
      */
     registerContextInjections() {
         return (target: Object, propertyKey: string, parameterIndex: number) => {
-            this.app.meta.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+            this.app.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
         }
     }
 
@@ -203,36 +158,37 @@ class CoreDecorators {
 
 
 
-//export Decorator factories here
+
+
 
 export function App(config?: AppOptions) {
-    return new CoreDecorators().startApp(config);
+    return new CoreFactory().startApp(config);
 }
 export function Lane(description: string) {
-    return new CoreDecorators().registerLanes(description);
+    return new CoreFactory().registerLanes(description);
 }
 
 export function Scheduled(schedule: string | any) {
-    return new CoreDecorators().registerScheduled(schedule);
+    return new CoreFactory().registerScheduled(schedule);
 }
 export function Hook(hook: HookName) {
-    return new CoreDecorators().registerHooks(hook);
+    return new CoreFactory().registerHooks(hook);
 }
 
 export function Webhook(path: string) {
-    return new CoreDecorators().registerWebhooks(path);
+    return new CoreFactory().registerWebhooks(path);
 }
 
 export function Plugin(name: string) {
-    return new CoreDecorators().registerPlugins(name);
+    return new CoreFactory().registerPlugins(name);
 }
 export function Action(description: string) {
-    return new CoreDecorators().registerActions(description);
+    return new CoreFactory().registerActions(description);
 }
 
 export function param(options: ParamOptions | string) {
-    return new CoreDecorators().registerParams(options);
+    return new CoreFactory().registerParams(options);
 }
 export function context() {
-    return new CoreDecorators().registerContextInjections();
+    return new CoreFactory().registerContextInjections();
 }

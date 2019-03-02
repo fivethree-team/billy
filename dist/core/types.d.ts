@@ -1,4 +1,4 @@
-import { BillyAPI } from "./api";
+import { CoreApi } from "./api";
 export interface AppOptions {
     name?: string;
     description?: string;
@@ -6,6 +6,11 @@ export interface AppOptions {
 }
 export interface LaneType {
     name: string;
+    description: string;
+}
+export interface ActionType {
+    name: string;
+    plugin: string;
     description: string;
 }
 export interface JobType {
@@ -20,10 +25,10 @@ export interface HookType {
 }
 export interface ParamType {
     name: string;
+    propertyKey: string;
     description: string;
     value?: string;
     optional?: boolean;
-    lane?: string;
     index: number;
 }
 export interface ParamOptions {
@@ -35,16 +40,22 @@ export interface WebHookType {
     path: string;
     lane: LaneType;
 }
-export interface MethodMeta {
+export interface ContextType {
     propertyKey: string;
     contextIndex: number;
 }
 export declare type HookName = 'ON_START' | 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
-export interface LaneContext {
+export declare const onStart: HookName;
+export declare const onError: HookName;
+export declare const beforeAll: HookName;
+export declare const afterAll: HookName;
+export declare const beforeEach: HookName;
+export declare const afterEach: HookName;
+export interface Context {
     name: string;
     description: string;
     directory: string;
-    api: BillyAPI;
+    api: CoreApi;
 }
 export declare class History {
     constructor();
@@ -54,10 +65,5 @@ export interface HistoryEntry {
     type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
     time: number;
     name: string;
-    description: string;
-}
-export interface ActionType {
-    name: string;
-    plugin: string;
     description: string;
 }

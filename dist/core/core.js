@@ -56,9 +56,71 @@ let Core = class Core {
         this.webhooks = [];
         this.actions = [];
         this.params = [];
-        this.meta = [];
+        this.contexts = [];
         this.appDir = path.resolve(path.dirname(require.main.filename) + '/../..');
         this.config = {};
+    }
+    /**
+     * initialize the @App Decorator target (application)
+     *
+     * @param {*} target @App Decorator target
+     * @memberof Core
+     */
+    init(target) {
+        this.application = new target();
+        this.initLanes();
+        this.initActions();
+    }
+    /**
+     *  * wrap every lane with the before each and after each hook.
+     *  * add taking lane output before execution.
+     *  * add to history
+     *
+     * @private
+     * @memberof Core
+     */
+    initLanes() {
+        this.lanes
+            .forEach((lane) => __awaiter(this, void 0, void 0, function* () {
+            const originalLane = this.application[lane.name].bind(this.application);
+            //replace original Lane with wrapped one
+            this.application[lane.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
+                yield this.runHook(this.getHook('BEFORE_EACH'));
+                console.log(chalk.green(`taking lane ${lane.name}`));
+                const historyEntry = {
+                    type: 'Lane',
+                    time: Date.now(),
+                    name: lane.name,
+                    description: lane.description
+                };
+                this.addToHistory(historyEntry);
+                const ret = yield originalLane(...args);
+                yield this.runHook(this.getHook('AFTER_EACH'));
+                return ret;
+            });
+        }));
+    }
+    /**
+    *  * add to history
+    *
+    * @private
+    * @memberof Core
+    */
+    initActions() {
+        this.actions
+            .forEach((action) => __awaiter(this, void 0, void 0, function* () {
+            const originalAction = this.application[action.name].bind(this.application);
+            this.application[action.name] = (...args) => {
+                const historyEntry = {
+                    type: 'Action',
+                    time: Date.now(),
+                    name: action.name,
+                    description: action.description
+                };
+                this.addToHistory(historyEntry);
+                return originalAction(...args);
+            };
+        }));
     }
     /**
      * This is called once the AppDecorator is assigned.
@@ -87,13 +149,6 @@ let Core = class Core {
             }
         });
     }
-    promptLaneAndRun() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.presentLanes();
-            const lane = yield this.promptLane();
-            yield this.startProgram(lane);
-        });
-    }
     /**
      * This will initialize the cli using commander.js
      *
@@ -115,6 +170,18 @@ let Core = class Core {
             .forEach(param => program = program.option(`--${param.name} [var]`, param.description));
         program.parse(process.argv);
         return program;
+    }
+    /**
+    * Present lane selection table and wait for user input. Then start the program.
+    *
+    * @memberof Core
+    */
+    promptLaneAndRun() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.presentLanes();
+            const lane = yield this.promptLane();
+            yield this.startProgram(lane);
+        });
     }
     /**
      * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
@@ -235,7 +302,7 @@ let Core = class Core {
         return __awaiter(this, void 0, void 0, function* () {
             const params = yield this.getArgs(lane);
             try {
-                const ret = yield this.instance[lane.name](...params, ...args);
+                const ret = yield this.application[lane.name](...params, ...args);
                 return ret;
             }
             catch (err) {
@@ -251,16 +318,16 @@ let Core = class Core {
      * @returns the params, sorted as they are injected into the lane via @param and @context
      * @memberof Core
      */
-    getArgs(lane) {
+    getArgs(method) {
         return __awaiter(this, void 0, void 0, function* () {
-            const contextMeta = this.meta.find(m => m.propertyKey === lane.name);
-            const params = yield this.resolveParams(lane);
+            const contextMeta = this.contexts.find(m => m.propertyKey === method.name);
+            const params = yield this.resolveParams(method);
             const sortedParams = [];
             params.forEach(param => {
                 sortedParams.push(param.value);
             });
             if (contextMeta) {
-                sortedParams.splice(contextMeta.contextIndex, 0, this.getLaneContext(lane));
+                sortedParams.splice(contextMeta.contextIndex, 0, this.getContext(method));
             }
             return sortedParams;
         });
@@ -274,10 +341,10 @@ let Core = class Core {
      * @returns {Promise<ParamType[]>}
      * @memberof Core
      */
-    resolveParams(lane) {
+    resolveParams(method) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = this.params
-                .filter(param => param.lane === lane.name)
+                .filter(param => param.propertyKey === method.name)
                 .sort((a, b) => {
                 return a.index - b.index;
             });
@@ -340,12 +407,12 @@ let Core = class Core {
      * @returns {LaneContext}
      * @memberof Core
      */
-    getLaneContext(lane) {
+    getContext(lane) {
         const context = {
             name: lane.name,
             description: lane.description,
             directory: this.appDir,
-            api: new api_1.BillyAPI(this)
+            api: new api_1.CoreApi(this)
         };
         return context;
     }
@@ -365,7 +432,7 @@ let Core = class Core {
             const params = yield this.getArgs(lane);
             this.addToHistory({ type: 'Hook', time: Date.now(), name: lane.name, description: lane.description });
             try {
-                const ret = yield this.instance[lane.name](...params, ...args);
+                const ret = yield this.application[lane.name](...params, ...args);
                 return ret;
             }
             catch (err) {
@@ -382,6 +449,14 @@ let Core = class Core {
     }
     getHistory() {
         return this.history.entries;
+    }
+    getApplication() {
+        return this.application;
+    }
+    setConfig(config) {
+        this.config.allowUnknownOptions = config.allowUnknownOptions;
+        this.config.name = config.name;
+        this.config.description = config.description;
     }
 };
 Core = __decorate([
