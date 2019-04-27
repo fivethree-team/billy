@@ -1,7 +1,7 @@
 import { LaneType, Context, JobType, HookType, WebHookType, ParamType, HookName, History, AppOptions, HistoryEntry, ActionType, ContextType } from './types';
 import { Provided, Provider, Singleton } from 'typescript-ioc';
 import Table from 'cli-table';
-import { parseJSON, processAsyncArray } from './util';
+import { parseJSON, processAsyncArray, exists } from './util';
 import { CoreApi } from './api';
 require('dotenv').config();
 
@@ -112,7 +112,7 @@ export class Core {
 
                     this.addToHistory(historyEntry)
                     return originalAction(...args);
-                    
+
                 }
 
             });
@@ -129,6 +129,10 @@ export class Core {
         this.history = new History();
         const startupHook = this.getHook('ON_START');
         this.program = this.initProgram(this.config.allowUnknownOptions);
+        if (!this.program) {
+            console.error('Couldn\'t initialize the program');
+            return;
+        }
         this.initParameters(this.program);
         const lanes = this.getLanesFromCommand(this.program);
         if (lanes.length === 0) {
@@ -154,7 +158,14 @@ export class Core {
      * @memberof Core
      */
     private initProgram(allowUnknownOptions = false) {
-        const packageJSON = parseJSON(`${this.appDir}/package.json`);
+        const inDist = exists(`${this.appDir}/../package.json`);
+        const inProject = exists(`${this.appDir}/package.json`);
+        let packageJSON;
+        if (inProject) {
+            packageJSON = parseJSON(`${this.appDir}/package.json`);
+        } else if (inDist) {
+            packageJSON = parseJSON(`${this.appDir}/../package.json`);
+        }
 
         let program = commander
             .version(packageJSON.version, '-v, --version')
@@ -342,7 +353,7 @@ export class Core {
      * @returns {Promise<ParamType[]>}
      * @memberof Core
      */
-    private async resolveParams(method:LaneType): Promise<ParamType[]> {
+    private async resolveParams(method: LaneType): Promise<ParamType[]> {
         const params = this.params
             .filter(param => param.propertyKey === method.name)
             .sort((a, b) => {

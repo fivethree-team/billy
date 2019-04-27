@@ -22,3 +22,7 @@ function parseJSON(path) {
     return JSON.parse(fs.readFileSync(path, 'utf8'));
 }
 exports.parseJSON = parseJSON;
+function exists(path) {
+    return fs.existsSync(path);
+}
+exports.exists = exists;

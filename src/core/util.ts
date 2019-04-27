@@ -9,3 +9,7 @@ export async function processAsyncArray(array: any[], asyncFunc) {
 export function parseJSON(path): any {
     return JSON.parse(fs.readFileSync(path, 'utf8'));
 }
+
+export function exists(path): any {
+    return fs.existsSync(path);
+}

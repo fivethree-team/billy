@@ -133,6 +133,10 @@ let Core = class Core {
             this.history = new types_1.History();
             const startupHook = this.getHook('ON_START');
             this.program = this.initProgram(this.config.allowUnknownOptions);
+            if (!this.program) {
+                console.error('Couldn\'t initialize the program');
+                return;
+            }
             this.initParameters(this.program);
             const lanes = this.getLanesFromCommand(this.program);
             if (lanes.length === 0) {
@@ -160,7 +164,15 @@ let Core = class Core {
      * @memberof Core
      */
     initProgram(allowUnknownOptions = false) {
-        const packageJSON = util_1.parseJSON(`${this.appDir}/package.json`);
+        const inDist = util_1.exists(`${this.appDir}/../package.json`);
+        const inProject = util_1.exists(`${this.appDir}/package.json`);
+        let packageJSON;
+        if (inProject) {
+            packageJSON = util_1.parseJSON(`${this.appDir}/package.json`);
+        }
+        else if (inDist) {
+            packageJSON = util_1.parseJSON(`${this.appDir}/../package.json`);
+        }
         let program = commander
             .version(packageJSON.version, '-v, --version');
         allowUnknownOptions ? program.allowUnknownOption() : false;
