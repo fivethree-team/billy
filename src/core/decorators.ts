@@ -1,5 +1,5 @@
 import { Singleton, Inject } from "typescript-ioc";
-import { LaneType, JobType, HookType, WebHookType, ParamType, ParamOptions, AppOptions, HookName } from "./types";
+import { JobModel, HookModel, WebHookModel, ParamModel, ParamOptions, AppOptions, HookName, LaneOptions } from "./types";
 import { Core } from "./core";
 
 /**
@@ -12,21 +12,14 @@ class CoreFactory {
 
     @Inject app: Core;
 
-    /**
-     * 
-     *
-     * @memberof CoreFactory
-     */
     startApp(config?: AppOptions) {
 
-        if (config) {
-            this.app.setConfig(config);
-        }
-
         return (target) => {
-            //this is called once the app is done loading
-            this.app.init(target);
-            this.app.run();
+            this.app.controller
+                .init(target)
+                .then(() => {
+                    this.app.run(config);
+                })
         }
     }
 
@@ -37,10 +30,13 @@ class CoreFactory {
      * @returns
      * @memberof CoreFactory
      */
-    registerLanes(description: string) {
+    registerLane(options: string | LaneOptions) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const lanes: LaneType[] = this.app.lanes;
-            lanes.push({ name: propertyKey, description: description });
+            if (typeof options === 'string') {
+                this.app.controller.registerLane({ name: propertyKey, options: { description: options } });
+            } else {
+                this.app.controller.registerLane({ name: propertyKey, options: options });
+            }
         }
     }
 
@@ -51,10 +47,10 @@ class CoreFactory {
      * @returns
      * @memberof CoreFactory
      */
-    registerScheduled(schedule: string | any) {
+    registerJob(schedule: string | any) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const job: JobType = { name: propertyKey, lane: { name: propertyKey, description: null }, schedule: schedule, scheduler: null }
-            this.app.jobs.push(job);
+            const job: JobModel = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null }
+            this.app.controller.registerJob(job);
         }
     }
 
@@ -67,8 +63,8 @@ class CoreFactory {
      */
     registerHooks(name: HookName) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const hook: HookType = { name: name, lane: { name: propertyKey, description: null } }
-            this.app.hooks.push(hook);
+            const hook: HookModel = { type: name, lane: { name: propertyKey, options: { description: name } } }
+            this.app.controller.registerHook(hook);
         }
     }
     /**
@@ -80,8 +76,8 @@ class CoreFactory {
      */
     registerWebhooks(path: string) {
         return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-            const hook: WebHookType = { path: path, lane: { name: propertyKey, description: null } }
-            this.app.webhooks.push(hook);
+            const hook: WebHookModel = { path: path, lane: { name: propertyKey, options: { description: null } } }
+            this.app.controller.registerWebHook(hook);
         }
     }
 
@@ -108,7 +104,7 @@ class CoreFactory {
      */
     registerActions(description: string) {
         return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-            this.app.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
+            this.app.controller.registerAction({ name: propertyKey, plugin: target.constructor.name, description: description });
         }
     }
 
@@ -119,26 +115,16 @@ class CoreFactory {
      * @returns {*}
      * @memberof CoreFactory
      */
-    registerParams(options: ParamOptions | string): any {
+    registerParam(options: ParamOptions): any {
         return (target: Object, propertyKey: string, parameterIndex: number) => {
-            if (typeof options === 'string') {
-                const param: ParamType = {
-                    index: parameterIndex,
-                    description: `Enter ${options}`,
-                    name: options,
-                    propertyKey: propertyKey
-                }
-                this.app.params.push(param);
-            } else {
-                const param: ParamType = {
-                    index: parameterIndex,
-                    description: options.description || `Enter ${options.name}`,
-                    name: options.name,
-                    propertyKey: propertyKey,
-                    optional: options.optional
-                }
-                this.app.params.push(param);
+
+            const param: ParamModel = {
+                index: parameterIndex,
+                name: options.name || propertyKey,
+                propertyKey: propertyKey,
+                options: options
             }
+            this.app.controller.registerParam(param);
         }
     }
 
@@ -150,26 +136,21 @@ class CoreFactory {
      */
     registerContextInjections() {
         return (target: Object, propertyKey: string, parameterIndex: number) => {
-            this.app.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+            this.app.controller.registerContext({ contextIndex: parameterIndex, propertyKey: propertyKey });
         }
     }
 
 }
 
-
-
-
-
-
 export function App(config?: AppOptions) {
     return new CoreFactory().startApp(config);
 }
-export function Lane(description: string) {
-    return new CoreFactory().registerLanes(description);
+export function Lane(description: string | LaneOptions) {
+    return new CoreFactory().registerLane(description);
 }
 
 export function Scheduled(schedule: string | any) {
-    return new CoreFactory().registerScheduled(schedule);
+    return new CoreFactory().registerJob(schedule);
 }
 export function Hook(hook: HookName) {
     return new CoreFactory().registerHooks(hook);
@@ -186,8 +167,8 @@ export function Action(description: string) {
     return new CoreFactory().registerActions(description);
 }
 
-export function param(options: ParamOptions | string) {
-    return new CoreFactory().registerParams(options);
+export function param(options: ParamOptions) {
+    return new CoreFactory().registerParam(options);
 }
 export function context() {
     return new CoreFactory().registerContextInjections();

@@ -1,66 +1,71 @@
-import { Core } from "./core";
-import { JobType, HistoryEntry } from "./types";
-import Table from 'cli-table';
+import { AppController } from './app';
+import { JobModel, HistoryEntry, HistoryAction } from "./types";
+import { msToHuman, createTable } from '../util/util';
 
-
-const scheduler = require('node-schedule');
-const chalk = require('chalk');
+import scheduler from 'node-schedule';
 
 const express = require('express')();
 const bodyParser = require('body-parser');
 express.use(bodyParser.json());
 
 
-
 /**
  * The CoreApi Class can be used to interact with the core application.
- * It is used to start the scheduling of Scheduled Lanes and make the Webhooks start listening.
  *
  * @export
  * @class CoreApi
  */
-export class CoreApi {
+export default class CoreApi {
 
-    private application: Core;
+    constructor(private controller: AppController) { }
 
-    constructor(application: Core) {
-        this.application = application
+    /**
+     * start all the scheduled Jobs in your billy application
+     *
+     * @returns {JobModel[]}
+     * @memberof CoreApi
+     */
+    startJobs(): JobModel[] {
+        this.controller.jobs
+            .forEach(job => {
+                job = this.startJob(job);
+            });
+        return this.controller.jobs;
     }
 
     /**
-     * start all the scheduled lanes in your billy application
+     * schedule a single job
      *
-     * @returns {JobType[]}
+     * @param {JobModel} job job that will be scheduled
+     * @returns {JobModel} returns the updated job, with scheduler attached
      * @memberof CoreApi
      */
-    scheduleAll(): JobType[] {
-        this.application.jobs
-            .forEach(job => {
-                const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
-                    console.log('run scheduled lane ' + job.lane.name + ': ' + fireDate);
-                    this.application.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Scheduled', time: Date.now() })
-                    await this.application.runHook(this.application.getHook('BEFORE_ALL'));
-                    await this.application.runLane(job.lane);
-                    await this.application.runHook(this.application.getHook('AFTER_ALL'));
-                });
-                job.scheduler = instance;
-            });
-        return this.application.jobs;
+    startJob(job: JobModel): JobModel {
+        const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
+            this.controller.history.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Job', time: Date.now(), history: [] })
+            const beforeAll = this.controller.getHook('BEFORE_ALL');
+            await this.controller.runLane(beforeAll ? beforeAll.lane : null);
+            await this.controller.runLane(job.lane);
+            const afterAll = this.controller.getHook('AFTER_ALL');
+            await this.controller.runLane(afterAll ? afterAll.lane : null);
+        });
+        job.scheduler = instance;
+        return job;
     }
 
     /**
      * cancel all scheduled lanes
      *
-     * @returns {JobType[]}
+     * @returns {JobModel[]}
      * @memberof CoreApi
      */
-    cancelScheduled(): JobType[] {
-        this.application.jobs
+    cancelJobs(): JobModel[] {
+        this.controller.jobs
             .forEach(job => {
                 job.scheduler.cancel();
             });
 
-        return this.application.jobs;
+        return this.controller.jobs;
     }
 
     /**
@@ -70,15 +75,13 @@ export class CoreApi {
      * @memberof CoreApi
      */
     startWebhooks(port = 7777) {
-        console.log(chalk.green(`starting webooks server on port ${port}...`));
 
-        this.application.webhooks
+        this.controller.webhooks
             .forEach(hook => {
                 express.post(hook.path, async (req, res) => {
-                    console.log(`💌  running webhook ${hook.lane.name}`);
-                    this.application.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now() })
+                    this.controller.history.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now(), history: [] })
                     res.sendStatus(200)
-                    await this.application.runLane(hook.lane, req.body);
+                    await this.controller.runLane(hook.lane, req.body);
                 })
             })
 
@@ -95,59 +98,45 @@ export class CoreApi {
     }
 
     /**
-     * Presents the Standard Billy Lane Selection Screen
+     * Presents the Selection Screen
      *
      * @returns
      * @memberof CoreApi
      */
     async promptLaneAndRun() {
-        return this.application.promptLaneAndRun();
+        return this.controller.promptLaneAndRun();
     }
 
-    getArgs(): string[] {
-        return this.application.getProgram().rawArgs.filter((arg, i) => i > 1);
-    }
 
     getHistory(): HistoryEntry[] {
-        return this.application.getHistory();
+        return this.controller.history.getHistory();
     }
+
+    addToHistory(...historyItem: HistoryEntry[]) {
+        return this.controller.history.addToHistory(...historyItem);
+    }
+
+    getLatestHistoryEntry(): { latest: HistoryEntry, addToHistory: (...historyItem: HistoryAction[]) => void } {
+        const latest = this.controller.history.getLatest();
+        const addToHistory = (...historyItem: HistoryAction[]) => {
+            latest.history.push(...historyItem);
+        }
+        return { latest: latest, addToHistory: addToHistory };
+    }
+
 
     printHistory() {
         const history = this.getHistory();
-        const table = new Table({
-
-            head: ["Number", "Name", "Type", "Description"],
-            chars: {
-                'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗'
-                , 'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝'
-                , 'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼'
-                , 'right': '║', 'right-mid': '╢', 'middle': '│'
-            }
+        const table = createTable(["Number", "Name", "Type", "Description"]);
+        history.forEach((h, index) => {
+            table.push([`${index + 1}`, h.name, h.type, h.description || '']);
+            h.history.forEach((st, i) => {
+                table.push(['', '', '', st.description]);
+            })
         });
-        history.forEach((h, index) => table.push([`${index + 1}`, h.name, h.type, h.description || '']));
         console.log('The application started at ' + new Date(history[0].time));
         console.log(table.toString());
-        console.log('The application took ' + this.msToHuman(history[history.length - 1].time - history[0].time));
+        console.log('The application took ' + msToHuman(history[history.length - 1].time - history[0].time));
     }
 
-    private msToHuman(millisec) {
-
-        const seconds = (millisec / 1000);
-
-        const minutes = (millisec / (1000 * 60));
-
-        const hours = (millisec / (1000 * 60 * 60));
-
-        const days = (millisec / (1000 * 60 * 60 * 24));
-
-        if (seconds < 60) {
-            return seconds.toFixed(1) + " Sec";
-        } else if (minutes < 60) {
-            return minutes.toFixed(1)  + " Min";
-        } else if (hours < 24) {
-            return hours.toFixed(1)  + " Hrs";
-        } else {
-            return days.toFixed(1)  + " Days"
-        }
-    }
 }

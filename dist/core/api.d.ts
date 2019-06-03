@@ -1,29 +1,36 @@
-import { Core } from "./core";
-import { JobType, HistoryEntry } from "./types";
+import { AppController } from './app';
+import { JobModel, HistoryEntry, HistoryAction } from "./types";
 /**
  * The CoreApi Class can be used to interact with the core application.
- * It is used to start the scheduling of Scheduled Lanes and make the Webhooks start listening.
  *
  * @export
  * @class CoreApi
  */
-export declare class CoreApi {
-    private application;
-    constructor(application: Core);
+export default class CoreApi {
+    private controller;
+    constructor(controller: AppController);
     /**
-     * start all the scheduled lanes in your billy application
+     * start all the scheduled Jobs in your billy application
      *
-     * @returns {JobType[]}
+     * @returns {JobModel[]}
      * @memberof CoreApi
      */
-    scheduleAll(): JobType[];
+    startJobs(): JobModel[];
+    /**
+     * schedule a single job
+     *
+     * @param {JobModel} job job that will be scheduled
+     * @returns {JobModel} returns the updated job, with scheduler attached
+     * @memberof CoreApi
+     */
+    startJob(job: JobModel): JobModel;
     /**
      * cancel all scheduled lanes
      *
-     * @returns {JobType[]}
+     * @returns {JobModel[]}
      * @memberof CoreApi
      */
-    cancelScheduled(): JobType[];
+    cancelJobs(): JobModel[];
     /**
      * start the webhooks server
      *
@@ -38,14 +45,17 @@ export declare class CoreApi {
      */
     stopWebhooks(): void;
     /**
-     * Presents the Standard Billy Lane Selection Screen
+     * Presents the Selection Screen
      *
      * @returns
      * @memberof CoreApi
      */
     promptLaneAndRun(): Promise<void>;
-    getArgs(): string[];
     getHistory(): HistoryEntry[];
+    addToHistory(...historyItem: HistoryEntry[]): void;
+    getLatestHistoryEntry(): {
+        latest: HistoryEntry;
+        addToHistory: (...historyItem: HistoryAction[]) => void;
+    };
     printHistory(): void;
-    private msToHuman;
 }

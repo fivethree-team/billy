@@ -1,46 +1,49 @@
-import { CoreApi } from "./api";
+import CoreApi from "./api";
 export interface AppOptions {
     name?: string;
     description?: string;
     allowUnknownOptions?: boolean;
 }
-export interface LaneType {
-    name: string;
+export interface LaneOptions {
+    alias?: string;
     description: string;
 }
-export interface ActionType {
+export interface LaneModel {
+    name: string;
+    options: LaneOptions;
+}
+export interface ActionModel {
     name: string;
     plugin: string;
     description: string;
 }
-export interface JobType {
+export interface JobModel {
     name: string;
     schedule: string;
-    lane: LaneType;
+    lane: LaneModel;
     scheduler: any;
 }
-export interface HookType {
-    name: HookName;
-    lane: LaneType;
+export interface HookModel {
+    type: HookName;
+    lane: LaneModel;
 }
-export interface ParamType {
+export interface ParamModel {
     name: string;
     propertyKey: string;
-    description: string;
     value?: string;
-    optional?: boolean;
     index: number;
+    options: ParamOptions;
 }
 export interface ParamOptions {
     name: string;
     description: string;
     optional?: boolean;
 }
-export interface WebHookType {
+export interface WebHookModel {
     path: string;
-    lane: LaneType;
+    lane: LaneModel;
 }
-export interface ContextType {
+export interface ContextModel {
     propertyKey: string;
     contextIndex: number;
 }
@@ -51,19 +54,20 @@ export declare const beforeAll: HookName;
 export declare const afterAll: HookName;
 export declare const beforeEach: HookName;
 export declare const afterEach: HookName;
-export interface Context {
+export declare class Context {
     name: string;
     description: string;
     directory: string;
+    workingDirectory: string;
     api: CoreApi;
 }
-export declare class History {
-    constructor();
-    entries: HistoryEntry[];
+export interface HistoryAction {
+    description: string;
 }
 export interface HistoryEntry {
-    type: 'Lane' | 'Hook' | 'Webhook' | 'Scheduled' | 'Action';
+    type: 'Lane' | 'Hook' | 'Webhook' | 'Job' | 'Action';
     time: number;
     name: string;
     description: string;
+    history?: HistoryAction[];
 }

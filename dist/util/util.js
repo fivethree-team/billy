@@ -1,0 +1,95 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require('fs');
+const path = require('path');
+const chalk_1 = __importDefault(require("chalk"));
+const cli_table_1 = __importDefault(require("cli-table"));
+function processAsyncArray(array, asyncFunc) {
+    return __awaiter(this, void 0, void 0, function* () {
+        for (const el of array) {
+            yield asyncFunc(el);
+        }
+        ;
+    });
+}
+exports.processAsyncArray = processAsyncArray;
+function wrapForEach(instance, source, before, after) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield processAsyncArray(source, (s) => __awaiter(this, void 0, void 0, function* () {
+            const original = instance[s.name].bind(instance);
+            instance[s.name] = (...args) => __awaiter(this, void 0, void 0, function* () {
+                if (before) {
+                    yield before(s);
+                }
+                const ret = yield original(...args);
+                if (after) {
+                    yield after(s);
+                }
+                return ret;
+            });
+        }));
+        return instance;
+    });
+}
+exports.wrapForEach = wrapForEach;
+function parseJSON(path) {
+    return JSON.parse(fs.readFileSync(path, 'utf8'));
+}
+exports.parseJSON = parseJSON;
+function exists(path) {
+    return fs.existsSync(path);
+}
+exports.exists = exists;
+function createTable(head) {
+    return new cli_table_1.default({
+        head: head,
+        chars: {
+            'top': '═', 'top-mid': '╤', 'top-left': '╔', 'top-right': '╗',
+            'bottom': '═', 'bottom-mid': '╧', 'bottom-left': '╚', 'bottom-right': '╝',
+            'left': '║', 'left-mid': '╟', 'mid': '─', 'mid-mid': '┼',
+            'right': '║', 'right-mid': '╢', 'middle': '│'
+        }
+    });
+}
+exports.createTable = createTable;
+function colorize(color, input) {
+    return chalk_1.default.keyword(color)(input);
+}
+exports.colorize = colorize;
+function msToHuman(millisec) {
+    const seconds = (millisec / 1000);
+    const minutes = (millisec / (1000 * 60));
+    const hours = (millisec / (1000 * 60 * 60));
+    const days = (millisec / (1000 * 60 * 60 * 24));
+    if (seconds < 60) {
+        return seconds.toFixed(1) + " Sec";
+    }
+    else if (minutes < 60) {
+        return minutes.toFixed(1) + " Min";
+    }
+    else if (hours < 24) {
+        return hours.toFixed(1) + " Hrs";
+    }
+    else {
+        return days.toFixed(1) + " Days";
+    }
+}
+exports.msToHuman = msToHuman;
+function splitCommaSeperated(aliases) {
+    if (aliases) {
+        return aliases.replace(' ', '').split(',');
+    }
+}
+exports.splitCommaSeperated = splitCommaSeperated;
+exports.appDir = path.resolve(path.dirname(require.main.filename) + '/..');

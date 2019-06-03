@@ -1,10 +1,10 @@
-import { ParamOptions, AppOptions, HookName } from "./types";
+import { ParamOptions, AppOptions, HookName, LaneOptions } from "./types";
 export declare function App(config?: AppOptions): (target: any) => void;
-export declare function Lane(description: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function Lane(description: string | LaneOptions): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Scheduled(schedule: string | any): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Hook(hook: HookName): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Webhook(path: string): (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function Plugin(name: string): (target: Function) => void;
 export declare function Action(description: string): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
-export declare function param(options: ParamOptions | string): any;
+export declare function param(options: ParamOptions): any;
 export declare function context(): (target: Object, propertyKey: string, parameterIndex: number) => void;

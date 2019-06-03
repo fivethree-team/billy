@@ -17,19 +17,13 @@ const core_1 = require("./core");
  * @class CoreFactory
  */
 let CoreFactory = class CoreFactory {
-    /**
-     *
-     *
-     * @memberof CoreFactory
-     */
     startApp(config) {
-        if (config) {
-            this.app.setConfig(config);
-        }
         return (target) => {
-            //this is called once the app is done loading
-            this.app.init(target);
-            this.app.run();
+            this.app.controller
+                .init(target)
+                .then(() => {
+                this.app.run(config);
+            });
         };
     }
     /**
@@ -39,10 +33,14 @@ let CoreFactory = class CoreFactory {
      * @returns
      * @memberof CoreFactory
      */
-    registerLanes(description) {
+    registerLane(options) {
         return (target, propertyKey, descriptor) => {
-            const lanes = this.app.lanes;
-            lanes.push({ name: propertyKey, description: description });
+            if (typeof options === 'string') {
+                this.app.controller.registerLane({ name: propertyKey, options: { description: options } });
+            }
+            else {
+                this.app.controller.registerLane({ name: propertyKey, options: options });
+            }
         };
     }
     /**
@@ -52,10 +50,10 @@ let CoreFactory = class CoreFactory {
      * @returns
      * @memberof CoreFactory
      */
-    registerScheduled(schedule) {
+    registerJob(schedule) {
         return (target, propertyKey, descriptor) => {
-            const job = { name: propertyKey, lane: { name: propertyKey, description: null }, schedule: schedule, scheduler: null };
-            this.app.jobs.push(job);
+            const job = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null };
+            this.app.controller.registerJob(job);
         };
     }
     /**
@@ -67,8 +65,8 @@ let CoreFactory = class CoreFactory {
      */
     registerHooks(name) {
         return (target, propertyKey, descriptor) => {
-            const hook = { name: name, lane: { name: propertyKey, description: null } };
-            this.app.hooks.push(hook);
+            const hook = { type: name, lane: { name: propertyKey, options: { description: name } } };
+            this.app.controller.registerHook(hook);
         };
     }
     /**
@@ -80,8 +78,8 @@ let CoreFactory = class CoreFactory {
      */
     registerWebhooks(path) {
         return (target, propertyKey, descriptor) => {
-            const hook = { path: path, lane: { name: propertyKey, description: null } };
-            this.app.webhooks.push(hook);
+            const hook = { path: path, lane: { name: propertyKey, options: { description: null } } };
+            this.app.controller.registerWebHook(hook);
         };
     }
     /**
@@ -104,7 +102,7 @@ let CoreFactory = class CoreFactory {
      */
     registerActions(description) {
         return (target, propertyKey, descriptor) => {
-            this.app.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
+            this.app.controller.registerAction({ name: propertyKey, plugin: target.constructor.name, description: description });
         };
     }
     /**
@@ -114,27 +112,15 @@ let CoreFactory = class CoreFactory {
      * @returns {*}
      * @memberof CoreFactory
      */
-    registerParams(options) {
+    registerParam(options) {
         return (target, propertyKey, parameterIndex) => {
-            if (typeof options === 'string') {
-                const param = {
-                    index: parameterIndex,
-                    description: `Enter ${options}`,
-                    name: options,
-                    propertyKey: propertyKey
-                };
-                this.app.params.push(param);
-            }
-            else {
-                const param = {
-                    index: parameterIndex,
-                    description: options.description || `Enter ${options.name}`,
-                    name: options.name,
-                    propertyKey: propertyKey,
-                    optional: options.optional
-                };
-                this.app.params.push(param);
-            }
+            const param = {
+                index: parameterIndex,
+                name: options.name || propertyKey,
+                propertyKey: propertyKey,
+                options: options
+            };
+            this.app.controller.registerParam(param);
         };
     }
     /**
@@ -145,7 +131,7 @@ let CoreFactory = class CoreFactory {
      */
     registerContextInjections() {
         return (target, propertyKey, parameterIndex) => {
-            this.app.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+            this.app.controller.registerContext({ contextIndex: parameterIndex, propertyKey: propertyKey });
         };
     }
 };
@@ -161,11 +147,11 @@ function App(config) {
 }
 exports.App = App;
 function Lane(description) {
-    return new CoreFactory().registerLanes(description);
+    return new CoreFactory().registerLane(description);
 }
 exports.Lane = Lane;
 function Scheduled(schedule) {
-    return new CoreFactory().registerScheduled(schedule);
+    return new CoreFactory().registerJob(schedule);
 }
 exports.Scheduled = Scheduled;
 function Hook(hook) {
@@ -185,7 +171,7 @@ function Action(description) {
 }
 exports.Action = Action;
 function param(options) {
-    return new CoreFactory().registerParams(options);
+    return new CoreFactory().registerParam(options);
 }
 exports.param = param;
 function context() {
