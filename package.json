@@ -1,11 +1,11 @@
 {
     "name": "@fivethree/billy-core",
-    "version": "0.10.0",
+    "version": "0.10.1",
     "description": "cli plugin system core.",
     "repository": {
-        "type" : "git",
-        "url" : "https://github.com/fivethree-team/billy"
-      },
+        "type": "git",
+        "url": "https://github.com/fivethree-team/billy"
+    },
     "main": "dist/index.js",
     "scripts": {
         "build": "node_modules/.bin/tsc -p .",
