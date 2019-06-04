@@ -1,5 +1,5 @@
+import { AppOptions } from './../types';
 import { AppController } from './app';
-import { AppOptions } from './types';
 import commander from 'commander';
 export declare class Core {
     controller: AppController;
@@ -14,13 +14,15 @@ export declare class Core {
      * @memberof Core
      */
     run(config: AppOptions): void;
+    private command;
     /**
-         * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
-         * If values have been passed in, the values will be stored in the ParamModel array
-         *
-         * @private
-         * @param {*} program commander.js instance
-         * @memberof Core
-         */
+     * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
+     * If values have been passed in, the values will be stored in the ParamModel array
+     *
+     * @private
+     * @param {*} program commander.js instance
+     * @memberof Core
+     */
     parseArgs(program: commander.Command): void;
+    private parseArg;
 }

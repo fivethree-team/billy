@@ -1,21 +1,22 @@
 import {
-    LaneModel, JobModel, HookModel, WebHookModel, ActionModel, ParamModel,
-    ContextModel, HookName, HistoryEntry, Context, onError, beforeAll, afterAll, onStart
-} from "./types";
+    CommandModel, JobModel, HookModel, ParamModel,
+    ContextModel, HookName, HistoryEntry, Context, WebhookModel, ActionModel,
+} from "../types";
 import { processAsyncArray, createTable, colorize, wrapForEach, appDir } from "../util/util";
 import { History } from './history';
 import { Questions, prompt } from "inquirer";
 import CoreApi from "./api";
+import { onStart, beforeAll, onError, afterAll, beforeEach, afterEach } from "./hooks";
 
 export class AppController {
 
     instance: any;
     history: History;
 
-    lanes: LaneModel[] = [];
+    lanes: CommandModel[] = [];
     jobs: JobModel[] = [];
     hooks: HookModel[] = [];
-    webhooks: WebHookModel[] = [];
+    webhooks: WebhookModel[] = [];
     actions: ActionModel[] = [];
     params: ParamModel[] = [];
     contexts: ContextModel[] = [];
@@ -26,7 +27,7 @@ export class AppController {
         await this.initActions();
     }
 
-    registerLane(lane: LaneModel) {
+    registerLane(lane: CommandModel) {
         this.lanes.push(lane);
     }
 
@@ -43,7 +44,7 @@ export class AppController {
     registerAction(action: ActionModel) {
         this.actions.push(action);
     }
-    registerWebHook(hook: WebHookModel) {
+    registerWebHook(hook: WebhookModel) {
         this.webhooks.push(hook);
     }
     registerHook(hook: HookModel) {
@@ -51,11 +52,10 @@ export class AppController {
     }
 
     private async initLanes() {
-        return wrapForEach(this.instance, this.lanes, async (lane: LaneModel) => {
-            const beforeEach = this.getHook('BEFORE_EACH');
-            await this.runLane(beforeEach ? beforeEach.lane : null);
+        return wrapForEach(this.instance, this.lanes, async (lane: CommandModel) => {
+            await this.runHook(beforeEach);
             const historyEntry: HistoryEntry = {
-                type: 'Lane',
+                type: 'Command',
                 time: Date.now(),
                 name: lane.name,
                 description: lane.options.description,
@@ -63,8 +63,7 @@ export class AppController {
             }
             this.history.addToHistory(historyEntry)
         }, async () => {
-            const afterEach = this.getHook('AFTER_EACH');
-            await this.runLane(afterEach ? afterEach.lane : null);
+            await this.runHook(afterEach)
         })
 
     }
@@ -86,18 +85,22 @@ export class AppController {
         return this.hooks.find(hook => hook.type === type);
     }
 
-    async run(lanes: LaneModel[]) {
+    async run(lanes: CommandModel[]) {
         this.history = new History()
         if (lanes.length === 0) {
-            if (!(await this.runHook(onStart))) {
-                await this.promptLaneAndRun();
-            }
+            await this.start();
         } else {
             await this.runLanes(lanes);
         }
     }
 
-    async runLane(lane: LaneModel, ...args) {
+    async start() {
+        if (!(await this.runHook(onStart))) {
+            await this.promptLaneAndRun();
+        }
+    }
+
+    async runLane(lane: CommandModel, ...args) {
         if (!lane) { return; }
         try {
             const params = await this.getArgs(lane);
@@ -116,7 +119,7 @@ export class AppController {
         return !!h;
     }
 
-    private async runLanes(lanes: LaneModel[]) {
+    private async runLanes(lanes: CommandModel[]) {
 
         await this.runHook(beforeAll);
 
@@ -124,6 +127,7 @@ export class AppController {
             await this.runLane(lane);
         })
         await this.runHook(afterAll)
+        this.history.clear();
     }
 
     async promptLaneAndRun() {
@@ -133,92 +137,83 @@ export class AppController {
     }
 
     async presentLanes() {
-        const table = createTable(["Number", "Lane", "Description"]);
+        const table = createTable(["Number", "Command", "Description"]);
         this.lanes.forEach((lane, index) => table.push([colorize('blue', `${index + 1}`), lane.name, lane.options.description]));
         console.log(table.toString());
     }
 
-    private async promptLane(): Promise<LaneModel> {
+    private async promptLane(): Promise<CommandModel> {
         const question: Questions = [{
             type: 'input',
             name: 'lane',
             message: 'please enter number or lane name',
-            validate: (input) => {
-                if (!!input && isNaN(input)) {
-                    if (this.lanes.some(lane => lane.name === input)) {
-                        return true;
-                    }
-                    else {
-                        console.log(colorize('red', `  | couldn't find lane with name ${input}`));
-                        return false;
-                    }
-                }
-                else {
-                    if (+input > 0 && +input <= this.lanes.length) {
-                        return true;
-                    }
-                    else {
-                        console.log(colorize('red', '  | specify a number between 1 and ' + this.lanes.length));
-                        return false;
-                    }
-                }
-            }
+            validate: (input) => this.validateInput(input)
         }];
         const answer = (await prompt(question)).lane;
         return isNaN(answer) ? this.lanes.find(l => l.name === answer) : this.lanes[answer - 1];
 
     }
 
-    private async getArgs(method: LaneModel) {
-        const contextMeta = this.contexts.find(m => m.propertyKey === method.name);
-        const params = await this.resolveParams(method);
-
-        const sortedParams: any[] = [];
-
-        params.forEach(param => {
-            sortedParams.push(param.value);
-        })
-
-        if (contextMeta) {
-            sortedParams.splice(contextMeta.contextIndex, 0, this.getContext(method))
+    private validateInput(input: number | string) {
+        if (!!input && isNaN(+input)) {
+            if (this.lanes.some(lane => lane.name === input)) {
+                return true;
+            }
+            else {
+                console.log(colorize('red', `  | couldn't find lane with name ${input}`));
+                return false;
+            }
         }
-
-        return sortedParams;
+        else {
+            if (+input > 0 && +input <= this.lanes.length) {
+                return true;
+            }
+            else {
+                console.log(colorize('red', '  | specify a number between 1 and ' + this.lanes.length));
+                return false;
+            }
+        }
     }
 
-    private async resolveParams(method: LaneModel): Promise<ParamModel[]> {
+    private async getArgs(method: CommandModel) {
+        const contextMeta = this.contexts.find(m => m.propertyKey === method.name);
+        const params: ParamModel[] = (await this.resolveParams(method));
+        const resolved: any[] = params.map(p => p.value);
+        if (contextMeta) {
+            resolved.splice(contextMeta.contextIndex, 0, this.getContext(method))
+        }
+        return resolved;
+    }
+
+    private async resolveParams(method: CommandModel): Promise<ParamModel[]> {
         const params = this.params
             .filter(param => param.propertyKey === method.name)
-            .sort((a, b) => {
-                return a.index - b.index;
-            });
+            .sort((a, b) => a.index - b.index);
         if (params.length === 0) {
             return [];
         }
         let ret: ParamModel[] = [];
         await processAsyncArray(params, async (p: ParamModel) => {
-            if (p.value) { return ret.push(p) }
-            if (p.options.optional) {
-                p.value = null;
-            } else {
-                const question: Questions = [{
-                    name: 'answer',
-                    message: p.options.description,
-                }
-                ]
-                const value = (await prompt(question)).answer;
-                p.value = value;
-            }
-
-            ret.push(p);
+            const resolved = await this.resolveParam(p);
+            ret.push(resolved);
         })
-
-
         return ret;
 
     }
 
-    private getContext(lane: LaneModel): Context {
+    private async resolveParam(p: ParamModel) {
+        if (!p.options.optional && !p.value) {
+            const question: Questions = [{
+                name: 'answer',
+                message: p.options.description,
+            }]
+            const value = (await prompt(question)).answer;
+            p.value = value;
+        }
+        return p;
+    }
+
+    private getContext(lane: CommandModel): Context {
         const context: Context = {
             name: lane.name,
             description: lane.options.description,

@@ -14,5 +14,8 @@ class History {
         return this.entries.reverse()
             .find(entry => entry.type !== 'Action');
     }
+    clear() {
+        this.entries = [];
+    }
 }
 exports.History = History;

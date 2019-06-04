@@ -7,15 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+const webhook_1 = require("./webhook");
+const scheduler_1 = require("./scheduler");
 const util_1 = require("../util/util");
-const node_schedule_1 = __importDefault(require("node-schedule"));
-const express = require('express')();
-const bodyParser = require('body-parser');
-express.use(bodyParser.json());
 /**
  * The CoreApi Class can be used to interact with the core application.
  *
@@ -25,76 +20,8 @@ express.use(bodyParser.json());
 class CoreApi {
     constructor(controller) {
         this.controller = controller;
-    }
-    /**
-     * start all the scheduled Jobs in your billy application
-     *
-     * @returns {JobModel[]}
-     * @memberof CoreApi
-     */
-    startJobs() {
-        this.controller.jobs
-            .forEach(job => {
-            job = this.startJob(job);
-        });
-        return this.controller.jobs;
-    }
-    /**
-     * schedule a single job
-     *
-     * @param {JobModel} job job that will be scheduled
-     * @returns {JobModel} returns the updated job, with scheduler attached
-     * @memberof CoreApi
-     */
-    startJob(job) {
-        const instance = node_schedule_1.default.scheduleJob(job.schedule, (fireDate) => __awaiter(this, void 0, void 0, function* () {
-            this.controller.history.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Job', time: Date.now(), history: [] });
-            const beforeAll = this.controller.getHook('BEFORE_ALL');
-            yield this.controller.runLane(beforeAll ? beforeAll.lane : null);
-            yield this.controller.runLane(job.lane);
-            const afterAll = this.controller.getHook('AFTER_ALL');
-            yield this.controller.runLane(afterAll ? afterAll.lane : null);
-        }));
-        job.scheduler = instance;
-        return job;
-    }
-    /**
-     * cancel all scheduled lanes
-     *
-     * @returns {JobModel[]}
-     * @memberof CoreApi
-     */
-    cancelJobs() {
-        this.controller.jobs
-            .forEach(job => {
-            job.scheduler.cancel();
-        });
-        return this.controller.jobs;
-    }
-    /**
-     * start the webhooks server
-     *
-     * @param {number} [port=7777]
-     * @memberof CoreApi
-     */
-    startWebhooks(port = 7777) {
-        this.controller.webhooks
-            .forEach(hook => {
-            express.post(hook.path, (req, res) => __awaiter(this, void 0, void 0, function* () {
-                this.controller.history.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now(), history: [] });
-                res.sendStatus(200);
-                yield this.controller.runLane(hook.lane, req.body);
-            }));
-        });
-        express.listen(port);
-    }
-    /**
-     * Stop webhooks server
-     *
-     * @memberof CoreApi
-     */
-    stopWebhooks() {
-        express.close();
+        this.webhooks = new webhook_1.WebHook(this.controller);
+        this.scheduler = new scheduler_1.Scheduler(this.controller);
     }
     /**
      * Presents the Selection Screen

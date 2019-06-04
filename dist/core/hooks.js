@@ -6,6 +6,3 @@ exports.beforeAll = 'BEFORE_ALL';
 exports.afterAll = 'AFTER_ALL';
 exports.beforeEach = 'BEFORE_EACH';
 exports.afterEach = 'AFTER_EACH';
-class Context {
-}
-exports.Context = Context;

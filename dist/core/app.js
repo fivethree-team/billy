@@ -11,11 +11,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const types_1 = require("./types");
 const util_1 = require("../util/util");
 const history_1 = require("./history");
 const inquirer_1 = require("inquirer");
 const api_1 = __importDefault(require("./api"));
+const hooks_1 = require("./hooks");
 class AppController {
     constructor() {
         this.lanes = [];
@@ -57,10 +57,9 @@ class AppController {
     initLanes() {
         return __awaiter(this, void 0, void 0, function* () {
             return util_1.wrapForEach(this.instance, this.lanes, (lane) => __awaiter(this, void 0, void 0, function* () {
-                const beforeEach = this.getHook('BEFORE_EACH');
-                yield this.runLane(beforeEach ? beforeEach.lane : null);
+                yield this.runHook(hooks_1.beforeEach);
                 const historyEntry = {
-                    type: 'Lane',
+                    type: 'Command',
                     time: Date.now(),
                     name: lane.name,
                     description: lane.options.description,
@@ -68,8 +67,7 @@ class AppController {
                 };
                 this.history.addToHistory(historyEntry);
             }), () => __awaiter(this, void 0, void 0, function* () {
-                const afterEach = this.getHook('AFTER_EACH');
-                yield this.runLane(afterEach ? afterEach.lane : null);
+                yield this.runHook(hooks_1.afterEach);
             }));
         });
     }
@@ -94,12 +92,17 @@ class AppController {
         return __awaiter(this, void 0, void 0, function* () {
             this.history = new history_1.History();
             if (lanes.length === 0) {
-                if (!(yield this.runHook(types_1.onStart))) {
-                    yield this.promptLaneAndRun();
-                }
+                yield this.start();
             }
             else {
                 yield this.runLanes(lanes);
+            }
+        });
+    }
+    start() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!(yield this.runHook(hooks_1.onStart))) {
+                yield this.promptLaneAndRun();
             }
         });
     }
@@ -114,7 +117,7 @@ class AppController {
                 return ret;
             }
             catch (err) {
-                yield this.runHook(types_1.onError, err);
+                yield this.runHook(hooks_1.onError, err);
                 console.error(util_1.colorize('red', err));
                 throw err;
             }
@@ -129,11 +132,12 @@ class AppController {
     }
     runLanes(lanes) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.runHook(types_1.beforeAll);
+            yield this.runHook(hooks_1.beforeAll);
             yield util_1.processAsyncArray(lanes, (lane) => __awaiter(this, void 0, void 0, function* () {
                 yield this.runLane(lane);
             }));
-            yield this.runHook(types_1.afterAll);
+            yield this.runHook(hooks_1.afterAll);
+            this.history.clear();
         });
     }
     promptLaneAndRun() {
@@ -145,7 +149,7 @@ class AppController {
     }
     presentLanes() {
         return __awaiter(this, void 0, void 0, function* () {
-            const table = util_1.createTable(["Number", "Lane", "Description"]);
+            const table = util_1.createTable(["Number", "Command", "Description"]);
             this.lanes.forEach((lane, index) => table.push([util_1.colorize('blue', `${index + 1}`), lane.name, lane.options.description]));
             console.log(table.toString());
         });
@@ -156,75 +160,70 @@ class AppController {
                     type: 'input',
                     name: 'lane',
                     message: 'please enter number or lane name',
-                    validate: (input) => {
-                        if (!!input && isNaN(input)) {
-                            if (this.lanes.some(lane => lane.name === input)) {
-                                return true;
-                            }
-                            else {
-                                console.log(util_1.colorize('red', `  | couldn't find lane with name ${input}`));
-                                return false;
-                            }
-                        }
-                        else {
-                            if (+input > 0 && +input <= this.lanes.length) {
-                                return true;
-                            }
-                            else {
-                                console.log(util_1.colorize('red', '  | specify a number between 1 and ' + this.lanes.length));
-                                return false;
-                            }
-                        }
-                    }
+                    validate: (input) => this.validateInput(input)
                 }];
             const answer = (yield inquirer_1.prompt(question)).lane;
             return isNaN(answer) ? this.lanes.find(l => l.name === answer) : this.lanes[answer - 1];
         });
     }
+    validateInput(input) {
+        if (!!input && isNaN(+input)) {
+            if (this.lanes.some(lane => lane.name === input)) {
+                return true;
+            }
+            else {
+                console.log(util_1.colorize('red', `  | couldn't find lane with name ${input}`));
+                return false;
+            }
+        }
+        else {
+            if (+input > 0 && +input <= this.lanes.length) {
+                return true;
+            }
+            else {
+                console.log(util_1.colorize('red', '  | specify a number between 1 and ' + this.lanes.length));
+                return false;
+            }
+        }
+    }
     getArgs(method) {
         return __awaiter(this, void 0, void 0, function* () {
             const contextMeta = this.contexts.find(m => m.propertyKey === method.name);
-            const params = yield this.resolveParams(method);
-            const sortedParams = [];
-            params.forEach(param => {
-                sortedParams.push(param.value);
-            });
+            const params = (yield this.resolveParams(method));
+            const resolved = params.map(p => p.value);
             if (contextMeta) {
-                sortedParams.splice(contextMeta.contextIndex, 0, this.getContext(method));
+                resolved.splice(contextMeta.contextIndex, 0, this.getContext(method));
             }
-            return sortedParams;
+            return resolved;
         });
     }
     resolveParams(method) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = this.params
                 .filter(param => param.propertyKey === method.name)
-                .sort((a, b) => {
-                return a.index - b.index;
-            });
+                .sort((a, b) => a.index - b.index);
             if (params.length === 0) {
                 return [];
             }
             let ret = [];
             yield util_1.processAsyncArray(params, (p) => __awaiter(this, void 0, void 0, function* () {
-                if (p.value) {
-                    return ret.push(p);
-                }
-                if (p.options.optional) {
-                    p.value = null;
-                }
-                else {
-                    const question = [{
-                            name: 'answer',
-                            message: p.options.description,
-                        }
-                    ];
-                    const value = (yield inquirer_1.prompt(question)).answer;
-                    p.value = value;
-                }
-                ret.push(p);
+                const resolved = yield this.resolveParam(p);
+                ret.push(resolved);
             }));
             return ret;
+        });
+    }
+    resolveParam(p) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!p.options.optional && !p.value) {
+                const question = [{
+                        name: 'answer',
+                        message: p.options.description,
+                    }];
+                const value = (yield inquirer_1.prompt(question)).answer;
+                p.value = value;
+            }
+            return p;
         });
     }
     getContext(lane) {

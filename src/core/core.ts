@@ -1,13 +1,10 @@
+import { AppOptions, ParamModel, CommandModel } from './../types';
 import { AppController } from './app';
-import { AppOptions } from './types';
-import { Provided, Singleton } from 'typescript-ioc';
 import { parseJSON, exists, appDir } from '../util/util';
 import commander from 'commander';
 
 require('dotenv').config();
 
-@Provided({ get: () => { return new Core(); } })
-@Singleton
 export class Core {
     controller: AppController = new AppController();
 
@@ -32,16 +29,7 @@ export class Core {
         config && config.allowUnknownOptions ? commander.allowUnknownOption() : false;
 
         this.controller.lanes
-            .forEach(lane => {
-                const command = commander.command(lane.name);
-                command.alias(lane.options.alias);
-                const params = this.controller.params.filter(param => param.propertyKey === lane.name);
-                params.forEach(param => command.option(`--${param.name || param.name} ${param.options.optional ? '[var]' : '<var>'}`, param.options.description, param.value))
-                command.action((cmd: commander.Command) => {
-                    this.parseArgs(cmd);
-                    this.controller.run([lane]);
-                });
-            });
+            .forEach(lane => this.command(lane));
 
         const command = commander.parse(process.argv);
         if (command.args.length === 0) {
@@ -50,22 +38,37 @@ export class Core {
 
     }
 
+    private command(lane: CommandModel): commander.Command {
+        const command = commander.command(lane.name);
+        command.alias(lane.options.alias);
+        const params = this.controller.params.filter(param => param.propertyKey === lane.name);
+        params.forEach(param => command.option(`--${param.name || param.name} ${param.options.optional ? '[var]' : '<var>'}`, param.options.description, param.value))
+        command.action((cmd: commander.Command) => {
+            this.parseArgs(cmd);
+            this.controller.run([lane]);
+        });
+
+        return command;
+    }
+
     /**
-         * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
-         * If values have been passed in, the values will be stored in the ParamModel array
-         *
-         * @private
-         * @param {*} program commander.js instance
-         * @memberof Core
-         */
+     * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
+     * If values have been passed in, the values will be stored in the ParamModel array
+     *
+     * @private
+     * @param {*} program commander.js instance
+     * @memberof Core
+     */
     parseArgs(program: commander.Command) {
         this.controller.params
-            .forEach(param => {
-                const hasValue = program[param.name] && typeof program[param.name] !== 'function';
-                if (hasValue) {
-                    param.value = program[param.name]
-                }
-            });
+            .forEach(param => this.parseArg(program, param));
+    }
+
+    private parseArg(program: commander.Command, param: ParamModel) {
+        const hasValue = program[param.name] && typeof program[param.name] !== 'function';
+        if (hasValue) {
+            param.value = program[param.name]
+        }
     }
 
 }

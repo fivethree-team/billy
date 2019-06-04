@@ -1,18 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+import { resolve, dirname } from 'path';
+import { readFileSync, existsSync } from 'fs';
 import chalk from 'chalk';
 import Table from 'cli-table';
+import { Wrapable } from '../types';
 
 export async function processAsyncArray(array: any[], asyncFunc) {
     for (const el of array) {
         await asyncFunc(el);
     };
 }
-
-export interface Wrapable {
-    name: string;
-}
-
 
 export async function wrapForEach(instance, source: Wrapable[], before?: Function, after?: Function) {
     await processAsyncArray(source, async (s) => {
@@ -32,11 +28,11 @@ export async function wrapForEach(instance, source: Wrapable[], before?: Functio
 }
 
 export function parseJSON(path): any {
-    return JSON.parse(fs.readFileSync(path, 'utf8'));
+    return JSON.parse(readFileSync(path, 'utf8'));
 }
 
 export function exists(path): any {
-    return fs.existsSync(path);
+    return existsSync(path);
 }
 
 export function createTable(head: string[]) {
@@ -82,4 +78,4 @@ export function splitCommaSeperated(aliases: string) {
     }
 }
 
-export const appDir = path.resolve(path.dirname(require.main.filename) + '/..');
+export const appDir = resolve(dirname(require.main.filename) + '/..');

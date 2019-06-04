@@ -11,8 +11,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs = require('fs');
-const path = require('path');
+const path_1 = require("path");
+const fs_1 = require("fs");
 const chalk_1 = __importDefault(require("chalk"));
 const cli_table_1 = __importDefault(require("cli-table"));
 function processAsyncArray(array, asyncFunc) {
@@ -44,11 +44,11 @@ function wrapForEach(instance, source, before, after) {
 }
 exports.wrapForEach = wrapForEach;
 function parseJSON(path) {
-    return JSON.parse(fs.readFileSync(path, 'utf8'));
+    return JSON.parse(fs_1.readFileSync(path, 'utf8'));
 }
 exports.parseJSON = parseJSON;
 function exists(path) {
-    return fs.existsSync(path);
+    return fs_1.existsSync(path);
 }
 exports.exists = exists;
 function createTable(head) {
@@ -92,4 +92,4 @@ function splitCommaSeperated(aliases) {
     }
 }
 exports.splitCommaSeperated = splitCommaSeperated;
-exports.appDir = path.resolve(path.dirname(require.main.filename) + '/..');
+exports.appDir = path_1.resolve(path_1.dirname(require.main.filename) + '/..');

@@ -1,6 +1,7 @@
-import { HistoryEntry } from "./types";
+import { HistoryEntry } from "../types";
 
 export class History {
+
     private entries: HistoryEntry[] = [];
 
     addToHistory(...historyItem: HistoryEntry[]) {
@@ -13,6 +14,11 @@ export class History {
 
     getLatest(): HistoryEntry {
         return this.entries.reverse()
-        .find(entry => entry.type !== 'Action')
+            .find(entry => entry.type !== 'Action')
     }
+
+    clear() {
+        this.entries = [];
+    }
+
 }

@@ -1,5 +1,7 @@
 import { AppController } from './app';
-import { JobModel, HistoryEntry, HistoryAction } from "./types";
+import { WebHook } from './webhook';
+import { Scheduler } from './scheduler';
+import { HistoryEntry, HistoryAction } from "../types";
 /**
  * The CoreApi Class can be used to interact with the core application.
  *
@@ -8,42 +10,9 @@ import { JobModel, HistoryEntry, HistoryAction } from "./types";
  */
 export default class CoreApi {
     private controller;
+    webhooks: WebHook;
+    scheduler: Scheduler;
     constructor(controller: AppController);
-    /**
-     * start all the scheduled Jobs in your billy application
-     *
-     * @returns {JobModel[]}
-     * @memberof CoreApi
-     */
-    startJobs(): JobModel[];
-    /**
-     * schedule a single job
-     *
-     * @param {JobModel} job job that will be scheduled
-     * @returns {JobModel} returns the updated job, with scheduler attached
-     * @memberof CoreApi
-     */
-    startJob(job: JobModel): JobModel;
-    /**
-     * cancel all scheduled lanes
-     *
-     * @returns {JobModel[]}
-     * @memberof CoreApi
-     */
-    cancelJobs(): JobModel[];
-    /**
-     * start the webhooks server
-     *
-     * @param {number} [port=7777]
-     * @memberof CoreApi
-     */
-    startWebhooks(port?: number): void;
-    /**
-     * Stop webhooks server
-     *
-     * @memberof CoreApi
-     */
-    stopWebhooks(): void;
     /**
      * Presents the Selection Screen
      *
