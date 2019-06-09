@@ -64,19 +64,24 @@ billy create --app my-app
 
 You can also run `npx @fivethree/billy-cli create --app my-app`  to scaffold a project.
 
-cd into your project and run `billy` to start the app.
+Alternatively you can clone the [App](https://github.com/fivethree/billy-app) and [Plugin](https://github.com/fivethree/billy-app) starters.
+
+### Build
+In your project directory run `billy build` or `npm run build` to build the app.
+
+### Run the app
+To execute a command either run `billy run` or `node . <command> [<args>]`.
 
 
-[Documentation](https://github.com/fivethree/billy-cli)
+[Billy-CLI Documentation](https://github.com/fivethree/billy-cli)
 
-### Use the core library without the cli
+### Use the library without the cli
 Install the library in your typescript project.
 ```bash
 npm i @fivethree/billy-core
 ```
 Use it in your index.ts file.
 
-Alternatively you can use the [App](https://github.com/fivethree/billy-app) and [Plugin](https://github.com/fivethree/billy-app) starters.
 
 ## Documentation
 
