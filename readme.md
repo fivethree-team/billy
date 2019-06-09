@@ -24,12 +24,29 @@ export class ExampleApp {
 
 ## Features
 
-* 🎂Super declarative Code - using Typescript **Decorators** - Creating Commands, Jobs and Webhooks is as easy as annotating a method.
+* 🎂**Super declarative code** - Creating commands is as easy as annotating a method.
+* ⏲ Schedule commands or listen for a webhook.
 * 💁 Automatically prompts the user for missing parameters.
-* 📋 Help and History built-in.
-* 🧩 Easy and extensible plugin system using Typescript **Mixins**.
+* 📋 Help, history and version out of the box.
+* 🧩 Easy and extensible plugin system using  **Typescript Mixins**.
 
 ## Table of contents
+
+  - [Table of contents](#table-of-contents)
+  - [Getting Started](#getting-started)
+    - [Install the CLI](#install-the-cli)
+    - [Use the core library without the CLI](#use-the-core-library-without-the-cli)
+  - [Documentation](#documentation)
+    - [App](#app)
+    - [Commands](#commands)
+    - [Parameters](#parameters)
+    - [Action](#action)
+    - [Hooks](#hooks)
+    - [Jobs](#jobs)
+    - [Webhooks](#webhooks)
+    - [Context](#context)
+  - [Plugins](#plugins)
+  - [Development](#development)
 
 ## Getting Started
 
