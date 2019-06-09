@@ -34,8 +34,8 @@ export class ExampleApp {
 
   - [Table of contents](#table-of-contents)
   - [Getting Started](#getting-started)
-    - [Install the CLI](#install-the-cli)
-    - [Use the core library without the CLI](#use-the-core-library-without-the-cli)
+    - [Install the cli](#install-the-cli)
+    - [Use the core library without the cli](#use-the-core-library-without-the-cli)
   - [Documentation](#documentation)
     - [App](#app)
     - [Commands](#commands)
@@ -50,23 +50,26 @@ export class ExampleApp {
 
 ## Getting Started
 
-### Install the CLI
-If you want you can use the CLI.
+### Installation
+If you want you can use the cli.
 
 ```bash
 npm i -g @fivethree/billy-cli
 ```
-
+### Project Scaffolding
 To scaffold a new project run
 ```bash
 billy create --app my-app
 ```
 
+You can also run `npx @fivethree/billy-cli create --app my-app`  to scaffold a project.
+
 cd into your project and run `billy` to start the app.
 
-[CLI Documentation](https://github.com/fivethree/billy-cli)
 
-### Use the core library without the CLI
+[Documentation](https://github.com/fivethree/billy-cli)
+
+### Use the core library without the cli
 Install the library in your typescript project.
 ```bash
 npm i @fivethree/billy-core
