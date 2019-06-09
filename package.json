@@ -10,7 +10,6 @@
     "scripts": {
         "build": "node_modules/.bin/tsc -p .",
         "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
-        "test": "npm i -g && billy",
         "refresh": "rm -rf ./node_modules ./package-lock.json && npm install"
     },
     "keywords": [
