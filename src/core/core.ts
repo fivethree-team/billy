@@ -31,6 +31,10 @@ export class Core {
         this.controller.lanes
             .forEach(lane => this.command(lane));
 
+        commander.on('command:*', () => {
+            this.controller.run([]);
+        });
+
         const command = commander.parse(process.argv);
         if (command.args.length === 0) {
             this.controller.run([]);

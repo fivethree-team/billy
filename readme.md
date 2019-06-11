@@ -1,5 +1,5 @@
 
-# billy 
+# Billy 
 
 🍔 **Declarative and intuitive cli apps in seconds**.
 
@@ -27,15 +27,17 @@ export class ExampleApp {
 * 🎂**Super declarative code** - Creating commands is as easy as annotating a method.
 * ⏲ Schedule commands or listen for a webhook.
 * 💁 Automatically prompts the user for missing parameters.
-* 📋 Help, history and version out of the box.
+* 📋 Help and version command out of the box.
 * 🧩 Easy and extensible plugin system using  **Typescript Mixins**.
 
 ## Table of contents
 
-  - [Table of contents](#table-of-contents)
   - [Getting Started](#getting-started)
-    - [Install the cli](#install-the-cli)
-    - [Use the core library without the cli](#use-the-core-library-without-the-cli)
+    - [Installation](#installation)
+    - [Project Scaffolding](#project-scaffolding)
+    - [Build](#build)
+    - [Run the app](#run-the-app)
+    - [Use the library without the cli](#use-the-library-without-the-cli)
   - [Documentation](#documentation)
     - [App](#app)
     - [Commands](#commands)
@@ -51,7 +53,7 @@ export class ExampleApp {
 ## Getting Started
 
 ### Installation
-If you want you can use the cli.
+If you want you can use the **cli**.
 
 ```bash
 npm i -g @fivethree/billy-cli

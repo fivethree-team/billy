@@ -30,6 +30,9 @@ class Core {
         config && config.allowUnknownOptions ? commander_1.default.allowUnknownOption() : false;
         this.controller.lanes
             .forEach(lane => this.command(lane));
+        commander_1.default.on('command:*', () => {
+            this.controller.run([]);
+        });
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
             this.controller.run([]);
