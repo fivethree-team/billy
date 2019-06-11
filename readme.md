@@ -1,5 +1,5 @@
 
-# billy 
+# Billy 
 
 🍔 **Declarative and intuitive cli apps in seconds**.
 
