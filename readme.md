@@ -1,7 +1,7 @@
 
+# Billy
+🍔 Declarative and intuitive cli apps in seconds.
 
-<center>
-<h1> Billy </h1>
 
 ![npm: version](https://flat.badgen.net/npm/v/@fivethree/billy-core?params)
 ![npm: license](https://flat.badgen.net/npm/license/@fivethree/billy-core?params)
@@ -9,12 +9,6 @@
 [![Edit @fivethree/billy-app](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/fivethreebilly-app-7nd15?codemirror=1&fontsize=14&module=%2Fsrc%2Findex.ts)
 
 ---
-
-🍔 Declarative and intuitive cli apps in seconds.
-
-</center>
-
-
 
 
 ## Basic Example
