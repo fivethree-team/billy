@@ -1,6 +1,6 @@
 {
     "name": "@fivethree/billy-core",
-    "version": "0.13.0",
+    "version": "0.13.1",
     "description": "cli plugin system core.",
     "repository": {
         "type": "git",
