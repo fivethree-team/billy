@@ -5,9 +5,9 @@
 
 ![npm: version](https://flat.badgen.net/npm/v/@fivethree/billy-core?params)
 ![npm: license](https://flat.badgen.net/npm/license/@fivethree/billy-core?params)
+[![Edit @fivethree/billy-app](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/fivethreebilly-app-7nd15?codemirror=1&fontsize=14&module=%2Fsrc%2Findex.ts)
 
 ## Basic Example
-[![Edit @fivethree/billy-app](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/fivethreebilly-app-7nd15?expanddevtools=1&fontsize=14&module=%2Fsrc%2Findex.ts)
 
 ```typescript
 import { App, Command } from "@fivethree/billy-core";
