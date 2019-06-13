@@ -13,8 +13,7 @@ export class History {
     }
 
     getLatest(): HistoryEntry {
-        return this.entries.reverse()
-            .find(entry => entry.type !== 'Action')
+        return this.entries[this.entries.length - 1];
     }
 
     clear() {

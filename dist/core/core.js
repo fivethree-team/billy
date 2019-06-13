@@ -28,8 +28,8 @@ class Core {
         const packageJSON = util_1.parseJSON(`${util_1.appDir}/package.json`);
         commander_1.default.version(packageJSON.version, '-v, --version');
         config && config.allowUnknownOptions ? commander_1.default.allowUnknownOption() : false;
-        this.controller.lanes
-            .forEach(lane => this.command(lane));
+        this.controller.commands
+            .forEach(command => this.command(command));
         commander_1.default.on('command:*', () => {
             this.controller.run([]);
         });
@@ -38,14 +38,14 @@ class Core {
             this.controller.run([]);
         }
     }
-    command(lane) {
-        const command = commander_1.default.command(lane.name);
-        command.alias(lane.options.alias);
-        const params = this.controller.params.filter(param => param.propertyKey === lane.name);
-        params.forEach(param => command.option(`--${param.name || param.name} ${param.options.optional ? '[var]' : '<var>'}`, param.options.description, param.value));
-        command.action((cmd) => {
-            this.parseArgs(cmd);
-            this.controller.run([lane]);
+    command(cmd) {
+        const command = commander_1.default.command(cmd.name);
+        command.alias(cmd.options.alias);
+        const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
+        params.forEach(param => command.option(`--${param.name} [var]`, param.options.description, param.value));
+        command.action((c) => {
+            this.parseArgs(c);
+            this.controller.run([cmd]);
         });
         return command;
     }

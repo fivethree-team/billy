@@ -30,7 +30,7 @@ export class Scheduler {
         const instance = scheduler.scheduleJob(job.schedule, async (fireDate) => {
             this.controller.history.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Job', time: Date.now(), history: [] })
             await this.controller.runHook(beforeAll);
-            await this.controller.runLane(job.lane);
+            await this.controller.runCommand(job.lane);
             await this.controller.runHook(afterAll);
             this.controller.history.clear();
         });

@@ -1,6 +1,6 @@
 import {
     JobModel, HookModel, WebhookModel, ParamModel,
-    ParamOptions, AppOptions, HookName, CommandOptions
+    ParamOptions, AppOptions, HookName, CommandOptions, ActionOptions
 } from "../types";
 import { Core } from "./core";
 
@@ -32,9 +32,9 @@ export function App(config?: AppOptions) {
 export function Command(options: string | CommandOptions) {
     return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
         if (typeof options === 'string') {
-            core.controller.registerLane({ name: propertyKey, options: { description: options } });
+            core.controller.commands.push({ name: propertyKey, options: { description: options } });
         } else {
-            core.controller.registerLane({ name: propertyKey, options: options });
+            core.controller.commands.push({ name: propertyKey, options: options });
         }
     }
 }
@@ -49,7 +49,7 @@ export function Command(options: string | CommandOptions) {
 export function Job(schedule: string | any) {
     return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
         const job: JobModel = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null }
-        core.controller.registerJob(job);
+        core.controller.jobs.push(job);
     }
 }
 /**
@@ -62,7 +62,7 @@ export function Job(schedule: string | any) {
 export function Hook(hook: HookName) {
     return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
         const h: HookModel = { type: hook, lane: { name: propertyKey, options: { description: hook } } }
-        core.controller.registerHook(h);
+        core.controller.hooks.push(h);
     }
 }
 
@@ -76,7 +76,7 @@ export function Hook(hook: HookName) {
 export function Webhook(path: string) {
     return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
         const hook: WebhookModel = { path: path, lane: { name: propertyKey, options: { description: null } } }
-        core.controller.registerWebHook(hook);
+        core.controller.webhooks.push(hook);
     }
 }
 
@@ -99,9 +99,13 @@ export function Plugin(name: string) {
  * @param {string} description
  * @returns
  */
-export function Action(description: string) {
+export function Action(description: string | ActionOptions) {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        core.controller.registerAction({ name: propertyKey, plugin: target.constructor.name, description: description });
+        if (typeof description === 'string') {
+            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
+        } else {
+            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, options: description });
+        }
     }
 }
 
@@ -121,7 +125,7 @@ export function param(options: ParamOptions) {
             propertyKey: propertyKey,
             options: options
         }
-        core.controller.registerParam(param);
+        core.controller.params.push(param);
     }
 }
 /**
@@ -132,6 +136,30 @@ export function param(options: ParamOptions) {
  */
 export function context() {
     return (target: Object, propertyKey: string, parameterIndex: number) => {
-        core.controller.registerContext({ contextIndex: parameterIndex, propertyKey: propertyKey });
+        core.controller.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+    }
+}
+
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+export function body() {
+    return (target: Object, propertyKey: string, parameterIndex: number) => {
+        core.controller.bodys.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+    }
+}
+
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+export function error() {
+    return (target: Object, propertyKey: string, parameterIndex: number) => {
+        core.controller.errors.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
     }
 }

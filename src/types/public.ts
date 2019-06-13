@@ -10,11 +10,22 @@ export interface CommandOptions {
     alias?: string;
     description: string;
 }
+export interface ActionOptions {
+    description?: (...args: any[]) => string;
+    addToHistory?: boolean;
+}
 
 export interface ParamOptions {
     name: string;
     description: string;
     optional?: boolean;
+    validators?: Validator[];
+}
+export class Validator {
+    validate: (param: any) => boolean | Promise<boolean>;
+    mapBefore?: (param: any) => any | Promise<any>;
+    mapAfter?: (param: any) => any | Promise<any>;
+    invalidText?: (name: string, param: any) => string;
 }
 
 export type HookName = 'ON_START' | 'ERROR' | 'BEFORE_ALL' | 'AFTER_ALL' | 'BEFORE_EACH' | 'AFTER_EACH';
@@ -27,8 +38,10 @@ export interface Context {
     api: CoreApi;
 }
 
-export interface HistoryAction{
+export interface HistoryAction {
     description: string;
+    name: string;
+    time?: number;
 }
 
 export interface HistoryEntry {

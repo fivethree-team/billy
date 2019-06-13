@@ -28,8 +28,8 @@ export class Core {
 
         config && config.allowUnknownOptions ? commander.allowUnknownOption() : false;
 
-        this.controller.lanes
-            .forEach(lane => this.command(lane));
+        this.controller.commands
+            .forEach(command => this.command(command));
 
         commander.on('command:*', () => {
             this.controller.run([]);
@@ -42,14 +42,14 @@ export class Core {
 
     }
 
-    private command(lane: CommandModel): commander.Command {
-        const command = commander.command(lane.name);
-        command.alias(lane.options.alias);
-        const params = this.controller.params.filter(param => param.propertyKey === lane.name);
-        params.forEach(param => command.option(`--${param.name || param.name} ${param.options.optional ? '[var]' : '<var>'}`, param.options.description, param.value))
-        command.action((cmd: commander.Command) => {
-            this.parseArgs(cmd);
-            this.controller.run([lane]);
+    private command(cmd: CommandModel): commander.Command {
+        const command = commander.command(cmd.name);
+        command.alias(cmd.options.alias);
+        const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
+        params.forEach(param => command.option(`--${param.name} [var]`, param.options.description, param.value))
+        command.action((c: commander.Command) => {
+            this.parseArgs(c);
+            this.controller.run([cmd]);
         });
 
         return command;

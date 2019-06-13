@@ -28,7 +28,17 @@ export class WebHook {
         this.app.post(hook.path, async (req, res) => {
             this.controller.history.addToHistory({ name: hook.lane.name, description: 'running webhook', type: 'Webhook', time: Date.now(), history: [] })
             res.sendStatus(200)
-            await this.controller.runLane(hook.lane, req.body);
+            const params = await this.controller.getArgs(hook.lane);
+            const meta = this.controller.bodys.find(m => m.propertyKey === hook.lane.name);
+            if (meta) {
+                params.splice(meta.contextIndex, 0, req.body);
+            }
+            try {
+                const ret = await this.controller.instance[hook.lane.name](...params)
+                return ret;
+            } catch (err) {
+                await this.controller.handleCommandError(err);
+            }
         })
     }
 

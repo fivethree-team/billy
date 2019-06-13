@@ -1,4 +1,4 @@
-import { CommandOptions, ParamOptions, HookName } from "./";
+import { CommandOptions, ParamOptions, HookName, ActionOptions } from "./";
 export interface CommandModel {
     name: string;
     options: CommandOptions;
@@ -6,7 +6,8 @@ export interface CommandModel {
 export interface ActionModel {
     name: string;
     plugin: string;
-    description: string;
+    description?: string;
+    options?: ActionOptions;
 }
 export interface JobModel {
     name: string;
@@ -21,7 +22,7 @@ export interface HookModel {
 export interface ParamModel {
     name: string;
     propertyKey: string;
-    value?: string;
+    value?: any;
     index: number;
     options: ParamOptions;
 }
@@ -30,6 +31,14 @@ export interface WebhookModel {
     lane: CommandModel;
 }
 export interface ContextModel {
+    propertyKey: string;
+    contextIndex: number;
+}
+export interface BodyModel {
+    propertyKey: string;
+    contextIndex: number;
+}
+export interface ErrorModel {
     propertyKey: string;
     contextIndex: number;
 }

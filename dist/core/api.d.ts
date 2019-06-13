@@ -27,4 +27,5 @@ export default class CoreApi {
         addToHistory: (...historyItem: HistoryAction[]) => void;
     };
     printHistory(): void;
+    private getHistoryContent;
 }

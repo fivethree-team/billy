@@ -1,4 +1,4 @@
-import { ParamOptions, AppOptions, HookName, CommandOptions } from "../types";
+import { ParamOptions, AppOptions, HookName, CommandOptions, ActionOptions } from "../types";
 /**
  *
  *
@@ -54,7 +54,7 @@ export declare function Plugin(name: string): (target: Function) => void;
  * @param {string} description
  * @returns
  */
-export declare function Action(description: string): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function Action(description: string | ActionOptions): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
 /**
  *
  *
@@ -70,3 +70,17 @@ export declare function param(options: ParamOptions): (target: Object, propertyK
  * @returns
  */
 export declare function context(): (target: Object, propertyKey: string, parameterIndex: number) => void;
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+export declare function body(): (target: Object, propertyKey: string, parameterIndex: number) => void;
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+export declare function error(): (target: Object, propertyKey: string, parameterIndex: number) => void;

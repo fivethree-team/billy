@@ -31,7 +31,7 @@ class CoreApi {
      */
     promptLaneAndRun() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.controller.promptLaneAndRun();
+            return this.controller.promptCommand();
         });
     }
     getHistory() {
@@ -48,17 +48,30 @@ class CoreApi {
         return { latest: latest, addToHistory: addToHistory };
     }
     printHistory() {
+        const now = Date.now();
+        const table = util_1.createTable(["#", "Description"]);
         const history = this.getHistory();
-        const table = util_1.createTable(["Number", "Name", "Type", "Description"]);
+        if (!history || history.length === 0) {
+            return;
+        }
         history.forEach((h, index) => {
-            table.push([`${index + 1}`, h.name, h.type, h.description || '']);
-            h.history.forEach((st, i) => {
-                table.push(['', '', '', st.description]);
-            });
+            const content = this.getHistoryContent(history, h, index, now);
+            table.push([`${index + 1}`, `${util_1.bold(h.type)}\n ${util_1.colorize('orange', '> ' + h.name)}\n${content}`]);
         });
         console.log('The application started at ' + new Date(history[0].time));
         console.log(table.toString());
-        console.log('The application took ' + util_1.msToHuman(history[history.length - 1].time - history[0].time));
+        console.log('The application took ' + util_1.msToHuman(now - history[0].time));
+    }
+    getHistoryContent(history, h, index, now) {
+        const duration = h && index + 1 < history.length ? history[index + 1].time - h.time : now - h.time;
+        const table = util_1.createTable(["Name", "Description", "Duration"], true, 'white');
+        h.history.forEach((his, i) => {
+            const last = history.length > index + 1 ? history[index + 1].time - his.time : Date.now() - his.time;
+            const dur = his && i + 1 < h.history.length ? h.history[i + 1].time - his.time : last;
+            table.push([his.name, his.description.match(new RegExp('.{1,' + 60 + '}', 'g')).join('\n'), util_1.msToHuman(dur)]);
+        });
+        table.push(['', '', util_1.colorize('green', '~' + util_1.msToHuman(duration))]);
+        return `${h.description}${h.history.length > 0 ? '\n\n' + table.toString() : ''}`;
     }
 }
 exports.default = CoreApi;

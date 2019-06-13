@@ -29,10 +29,10 @@ exports.App = App;
 function Command(options) {
     return (target, propertyKey, descriptor) => {
         if (typeof options === 'string') {
-            core.controller.registerLane({ name: propertyKey, options: { description: options } });
+            core.controller.commands.push({ name: propertyKey, options: { description: options } });
         }
         else {
-            core.controller.registerLane({ name: propertyKey, options: options });
+            core.controller.commands.push({ name: propertyKey, options: options });
         }
     };
 }
@@ -47,7 +47,7 @@ exports.Command = Command;
 function Job(schedule) {
     return (target, propertyKey, descriptor) => {
         const job = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null };
-        core.controller.registerJob(job);
+        core.controller.jobs.push(job);
     };
 }
 exports.Job = Job;
@@ -61,7 +61,7 @@ exports.Job = Job;
 function Hook(hook) {
     return (target, propertyKey, descriptor) => {
         const h = { type: hook, lane: { name: propertyKey, options: { description: hook } } };
-        core.controller.registerHook(h);
+        core.controller.hooks.push(h);
     };
 }
 exports.Hook = Hook;
@@ -75,7 +75,7 @@ exports.Hook = Hook;
 function Webhook(path) {
     return (target, propertyKey, descriptor) => {
         const hook = { path: path, lane: { name: propertyKey, options: { description: null } } };
-        core.controller.registerWebHook(hook);
+        core.controller.webhooks.push(hook);
     };
 }
 exports.Webhook = Webhook;
@@ -100,7 +100,12 @@ exports.Plugin = Plugin;
  */
 function Action(description) {
     return (target, propertyKey, descriptor) => {
-        core.controller.registerAction({ name: propertyKey, plugin: target.constructor.name, description: description });
+        if (typeof description === 'string') {
+            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
+        }
+        else {
+            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, options: description });
+        }
     };
 }
 exports.Action = Action;
@@ -119,7 +124,7 @@ function param(options) {
             propertyKey: propertyKey,
             options: options
         };
-        core.controller.registerParam(param);
+        core.controller.params.push(param);
     };
 }
 exports.param = param;
@@ -131,7 +136,31 @@ exports.param = param;
  */
 function context() {
     return (target, propertyKey, parameterIndex) => {
-        core.controller.registerContext({ contextIndex: parameterIndex, propertyKey: propertyKey });
+        core.controller.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
     };
 }
 exports.context = context;
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+function body() {
+    return (target, propertyKey, parameterIndex) => {
+        core.controller.bodys.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+    };
+}
+exports.body = body;
+/**
+ *
+ *
+ * @export
+ * @returns
+ */
+function error() {
+    return (target, propertyKey, parameterIndex) => {
+        core.controller.errors.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+    };
+}
+exports.error = error;

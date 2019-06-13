@@ -39,7 +39,7 @@ class Scheduler {
         const instance = node_schedule_1.default.scheduleJob(job.schedule, (fireDate) => __awaiter(this, void 0, void 0, function* () {
             this.controller.history.addToHistory({ name: job.lane.name, description: 'running scheduled lane', type: 'Job', time: Date.now(), history: [] });
             yield this.controller.runHook(hooks_1.beforeAll);
-            yield this.controller.runLane(job.lane);
+            yield this.controller.runCommand(job.lane);
             yield this.controller.runHook(hooks_1.afterAll);
             this.controller.history.clear();
         }));

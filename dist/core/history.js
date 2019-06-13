@@ -11,8 +11,7 @@ class History {
         return this.entries;
     }
     getLatest() {
-        return this.entries.reverse()
-            .find(entry => entry.type !== 'Action');
+        return this.entries[this.entries.length - 1];
     }
     clear() {
         this.entries = [];

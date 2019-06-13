@@ -2,7 +2,7 @@ import { AppController } from './app';
 import { WebHook } from './webhook';
 import { Scheduler } from './scheduler';
 import { HistoryEntry, HistoryAction } from "../types";
-import { msToHuman, createTable } from '../util/util';
+import { msToHuman, createTable, colorize, bold } from '../util/util';
 
 
 /**
@@ -28,7 +28,7 @@ export default class CoreApi {
      * @memberof CoreApi
      */
     async promptLaneAndRun() {
-        return this.controller.promptLaneAndRun();
+        return this.controller.promptCommand();
     }
 
     getHistory(): HistoryEntry[] {
@@ -49,17 +49,35 @@ export default class CoreApi {
 
 
     printHistory() {
+        const now = Date.now();
+        const table = createTable(["#", "Description"]);
         const history = this.getHistory();
-        const table = createTable(["Number", "Name", "Type", "Description"]);
+        if (!history || history.length === 0) {
+            return;
+        }
         history.forEach((h, index) => {
-            table.push([`${index + 1}`, h.name, h.type, h.description || '']);
-            h.history.forEach((st, i) => {
-                table.push(['', '', '', st.description]);
-            })
+            const content = this.getHistoryContent(history, h, index, now);
+            table.push([`${index + 1}`, `${bold(h.type)}\n ${colorize('orange', '> ' + h.name)}\n${content}`]);
         });
+
         console.log('The application started at ' + new Date(history[0].time));
         console.log(table.toString());
-        console.log('The application took ' + msToHuman(history[history.length - 1].time - history[0].time));
+        console.log('The application took ' + msToHuman(now - history[0].time));
     }
+
+    private getHistoryContent(history: HistoryEntry[], h: HistoryEntry, index: number, now: number) {
+        const duration = h && index + 1 < history.length ? history[index + 1].time - h.time : now - h.time;
+        const table = createTable(["Name", "Description", "Duration"], true, 'white');
+        h.history.forEach((his, i) => {
+            const last = history.length > index + 1 ? history[index + 1].time - his.time : Date.now() - his.time;
+            const dur = his && i + 1 < h.history.length ? h.history[i + 1].time - his.time : last;
+            table.push([his.name, his.description.match(new RegExp('.{1,' + 60 + '}', 'g')).join('\n'), msToHuman(dur)]);
+        });
+        table.push(['', '', colorize('green', '~' + msToHuman(duration))])
+        return `${h.description}${h.history.length > 0 ? '\n\n' + table.toString() : ''}`;
+
+
+    }
+
 
 }
