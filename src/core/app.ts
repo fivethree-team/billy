@@ -62,7 +62,7 @@ export class AppController {
                 if (this.history.getLatest() && !this.history.getLatest().history) {
                     this.history.getLatest().history = [];
                 }
-                this.history.getLatest().history.push(historyEntry);
+                this.history.getLatest() && this.history.getLatest().history.push(historyEntry);
             }
         });
     }
