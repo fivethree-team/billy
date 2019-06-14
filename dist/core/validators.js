@@ -5,33 +5,26 @@ exports.isNumber = {
     validate: (param) => !isNaN(param),
     invalidText: (param) => `The parameter ${param} should be a number.`
 };
-exports.isNumberArray = () => {
-    const validator = {
-        validate: (mapped) => mapped.filter(p => exports.isNumber.validate(p)).length === 0,
-        mapBefore: (list) => list.replace(', ', ',').split(','),
-        invalidText: () => `Please specify a comma separated list of numbers.`
-    };
-    return validator;
+exports.isNumberArray = {
+    validate: (mapped) => mapped.filter(p => exports.isNumber.validate(p)).length === 0,
+    mapBefore: (list) => list.replace(', ', ',').split(','),
+    invalidText: () => `Please specify a comma separated list of numbers.`
 };
-exports.isBoolean = () => {
-    const validator = {
-        validate: (mapped) => mapped,
-        mapBefore: (value) => ['false', 'true', true, false, 'yes', 'no', 'y', 'n', '1', '0'].some(s => s === value),
-        invalidText: () => `The parameter should be of type boolean. (Usage: [true/false , y/n, ...])`
-    };
-    return validator;
+exports.isBoolean = {
+    validate: (value) => ['false', 'true', true, false, 'yes', 'no', 'y', 'n', '1', '0'].some(s => s === value),
+    mapAfter: (value) => {
+        return ['true', true, 'yes', 'y', '1'].some(s => s === value);
+    },
+    invalidText: () => `The parameter should be of type boolean. (Usage: [true/false , y/n, ...])`
 };
 exports.isString = {
     validate: (param) => typeof param === 'string',
     invalidText: (param) => `The parameter ${param} should be a string.`
 };
-exports.isStringArray = () => {
-    const validator = {
-        validate: (mapped) => mapped.filter(p => exports.isString.validate(p)).length === 0,
-        mapBefore: (list) => list.replace(', ', ',').split(','),
-        invalidText: () => `Please specify a comma seperated list.`
-    };
-    return validator;
+exports.isStringArray = {
+    validate: (mapped) => mapped.filter(p => exports.isString.validate(p)).length === 0,
+    mapBefore: (list) => list.replace(', ', ',').split(','),
+    invalidText: () => `Please specify a comma seperated list.`
 };
 exports.isExistingPath = {
     validate: (param) => util_1.exists(param.startsWith('/') ? param : process.cwd() + '/' + param),

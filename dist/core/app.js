@@ -200,7 +200,7 @@ class AppController {
     }
     resolveParam(p) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (p.options.optional && !p.value) {
+            if (p.options.optional && (!p.value && p.value !== false)) {
                 return p;
             }
             if (!p.value) {

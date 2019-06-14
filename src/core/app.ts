@@ -188,7 +188,7 @@ export class AppController {
 
     private async resolveParam(p: ParamModel) {
 
-        if (p.options.optional && !p.value) {
+        if (p.options.optional && (!p.value && p.value !== false)) {
             return p;
         }
         if (!p.value) {
