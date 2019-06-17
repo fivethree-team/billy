@@ -16,7 +16,7 @@ const core = new Core();
 export function App(config?: AppOptions) {
     return (target) => {
         core.controller
-            .init(target)
+            .init(target, config)
             .then(() => {
                 core.run(config);
             })

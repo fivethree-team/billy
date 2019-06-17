@@ -1,3 +1,4 @@
+import { AppOptions } from './../types/public';
 import {
     CommandModel, JobModel, HookModel, ParamModel,
     ContextModel, HookName, HistoryEntry, WebhookModel,
@@ -12,6 +13,7 @@ import { onStart, beforeAll, onError, afterAll, beforeEach, afterEach } from "./
 export class AppController {
 
     instance: any;
+    config: AppOptions
     history: History;
 
     //holds the metadata of the method decorators
@@ -27,7 +29,8 @@ export class AppController {
     bodys: BodyModel[] = [];
     errors: ErrorModel[] = [];
 
-    async init(target) {
+    async init(target, config: AppOptions) {
+        this.config = config;
         this.instance = new target();
         await this.initCommands();
         await this.initActions();
@@ -172,7 +175,7 @@ export class AppController {
 
     private async resolveParams(method: CommandModel): Promise<ParamModel[]> {
         const params = this.params
-            .filter(param => param.propertyKey === method.name)
+            .filter(param => param.propertyKey === method.name || (this.config && this.config.allowUnknownOptions))
             .sort((a, b) => a.index - b.index);
         if (params.length === 0) {
             return [];

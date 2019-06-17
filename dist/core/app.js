@@ -30,8 +30,9 @@ class AppController {
         this.bodys = [];
         this.errors = [];
     }
-    init(target) {
+    init(target, config) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.config = config;
             this.instance = new target();
             yield this.initCommands();
             yield this.initActions();
@@ -185,7 +186,7 @@ class AppController {
     resolveParams(method) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = this.params
-                .filter(param => param.propertyKey === method.name)
+                .filter(param => param.propertyKey === method.name || (this.config && this.config.allowUnknownOptions))
                 .sort((a, b) => a.index - b.index);
             if (params.length === 0) {
                 return [];

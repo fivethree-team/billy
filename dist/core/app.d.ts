@@ -1,7 +1,9 @@
+import { AppOptions } from './../types/public';
 import { CommandModel, JobModel, HookModel, ParamModel, ContextModel, HookName, WebhookModel, ActionModel, BodyModel, ErrorModel } from "../types";
 import { History } from './history';
 export declare class AppController {
     instance: any;
+    config: AppOptions;
     history: History;
     commands: CommandModel[];
     jobs: JobModel[];
@@ -12,7 +14,7 @@ export declare class AppController {
     contexts: ContextModel[];
     bodys: BodyModel[];
     errors: ErrorModel[];
-    init(target: any): Promise<void>;
+    init(target: any, config: AppOptions): Promise<void>;
     private initCommands;
     private initActions;
     getHook(type: HookName): HookModel;

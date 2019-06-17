@@ -12,7 +12,7 @@ const core = new core_1.Core();
 function App(config) {
     return (target) => {
         core.controller
-            .init(target)
+            .init(target, config)
             .then(() => {
             core.run(config);
         });
