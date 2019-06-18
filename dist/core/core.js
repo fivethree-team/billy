@@ -33,9 +33,21 @@ class Core {
         commander_1.default.on('command:*', () => {
             this.controller.run([]);
         });
+        const onStart = this.controller.hooks.find(hook => hook.type === 'ON_START');
+        if (onStart) {
+            this.controller.params
+                .filter(param => param.propertyKey === onStart.lane.name)
+                .forEach(param => commander_1.default.option(`--${param.name} [var]`, param.options.description, param.value));
+        }
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
-            this.controller.run([]);
+            if (onStart) {
+                this.parseArgs(command);
+                this.controller.run([onStart.lane]);
+            }
+            else {
+                this.controller.run([]);
+            }
         }
     }
     command(cmd) {

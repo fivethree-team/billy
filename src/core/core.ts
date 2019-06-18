@@ -25,7 +25,6 @@ export class Core {
 
         const packageJSON = parseJSON(`${appDir}/package.json`);
         commander.version(packageJSON.version, '-v, --version')
-
         config && config.allowUnknownOptions ? commander.allowUnknownOption() : false;
 
         this.controller.commands
@@ -33,11 +32,23 @@ export class Core {
 
         commander.on('command:*', () => {
             this.controller.run([]);
-        });
+        })
+        const onStart = this.controller.hooks.find(hook => hook.type === 'ON_START');
+        if (onStart) {
+            this.controller.params
+                .filter(param => param.propertyKey === onStart.lane.name)
+                .forEach(param => commander.option(`--${param.name} [var]`, param.options.description, param.value))
+        }
+
 
         const command = commander.parse(process.argv);
         if (command.args.length === 0) {
-            this.controller.run([]);
+            if (onStart) {
+                this.parseArgs(command);
+                this.controller.run([onStart.lane]);
+            } else {
+                this.controller.run([]);
+            }
         }
 
     }

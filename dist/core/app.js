@@ -79,14 +79,7 @@ class AppController {
     run(commands) {
         return __awaiter(this, void 0, void 0, function* () {
             this.history = new history_1.History();
-            return commands.length > 0 ? yield this.runCommands(commands) : yield this.startWithoutCommand();
-        });
-    }
-    startWithoutCommand() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!(yield this.runHook(hooks_1.onStart))) {
-                yield this.promptCommand();
-            }
+            return commands.length > 0 ? yield this.runCommands(commands) : yield this.promptCommand();
         });
     }
     runCommand(command) {
@@ -186,7 +179,7 @@ class AppController {
     resolveParams(method) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = this.params
-                .filter(param => param.propertyKey === method.name || (this.config && this.config.allowUnknownOptions))
+                .filter(param => param.propertyKey === method.name)
                 .sort((a, b) => a.index - b.index);
             if (params.length === 0) {
                 return [];

@@ -19,7 +19,6 @@ export declare class AppController {
     private initActions;
     getHook(type: HookName): HookModel;
     run(commands: CommandModel[]): Promise<void>;
-    private startWithoutCommand;
     runCommand(command: CommandModel): Promise<any>;
     handleCommandError(err: any): Promise<void>;
     runHook(hook: HookName, ...args: any[]): Promise<boolean>;

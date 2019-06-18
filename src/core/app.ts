@@ -76,14 +76,10 @@ export class AppController {
 
     async run(commands: CommandModel[]) {
         this.history = new History()
-        return commands.length > 0 ? await this.runCommands(commands) : await this.startWithoutCommand();
+        return commands.length > 0 ? await this.runCommands(commands) : await this.promptCommand();
     }
 
-    private async startWithoutCommand() {
-        if (!(await this.runHook(onStart))) {
-            await this.promptCommand();
-        }
-    }
+
 
     async runCommand(command: CommandModel) {
         if (!command) { return; }
@@ -175,7 +171,7 @@ export class AppController {
 
     private async resolveParams(method: CommandModel): Promise<ParamModel[]> {
         const params = this.params
-            .filter(param => param.propertyKey === method.name || (this.config && this.config.allowUnknownOptions))
+            .filter(param => param.propertyKey === method.name)
             .sort((a, b) => a.index - b.index);
         if (params.length === 0) {
             return [];
