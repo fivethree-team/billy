@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = require("./app");
 const util_1 = require("../util/util");
 const commander_1 = __importDefault(require("commander"));
+const camelcase_1 = __importDefault(require("camelcase"));
 require('dotenv').config();
 class Core {
     constructor() {
@@ -37,12 +38,12 @@ class Core {
         if (onStart) {
             this.controller.params
                 .filter(param => param.propertyKey === onStart.lane.name)
-                .forEach(param => commander_1.default.option(`--${param.name} [var]`, param.options.description, param.value));
+                .forEach(p => this.param(commander_1.default, p));
         }
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
             if (onStart) {
-                this.parseArgs(command);
+                this.parseArgs(commander_1.default);
                 this.controller.run([onStart.lane]);
             }
             else {
@@ -53,13 +54,23 @@ class Core {
     command(cmd) {
         const command = commander_1.default.command(cmd.name);
         command.alias(cmd.options.alias);
+        command.description(cmd.options.description);
         const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
-        params.forEach(param => command.option(`--${param.name} [var]`, param.options.description, param.value));
-        command.action((c) => {
-            this.parseArgs(c);
+        params.forEach(p => this.param(command, p));
+        command.action((options) => {
+            this.parseArgs(options);
             this.controller.run([cmd]);
         });
         return command;
+    }
+    param(cmd, param) {
+        if (param.options.gitStyle) {
+            return cmd.option(`[${param.name}]`, param.options.description, param.value);
+        }
+        if (param.name.indexOf('--') > -1) {
+            return cmd.option(`${param.name} [var]`, param.options.description, param.value);
+        }
+        return cmd.option(`--${param.name} [var]`, param.options.description, param.value);
     }
     /**
      * parsing of the cli parameters passed via --VARIABLE (ex. --name Gary).
@@ -69,14 +80,17 @@ class Core {
      * @param {*} program commander.js instance
      * @memberof Core
      */
-    parseArgs(program) {
+    parseArgs(options) {
         this.controller.params
-            .forEach(param => this.parseArg(program, param));
+            .forEach(param => this.parseArg(options, param));
     }
-    parseArg(program, param) {
-        const hasValue = program[param.name] && typeof program[param.name] !== 'function';
-        if (hasValue) {
-            param.value = program[param.name];
+    parseArg(options, param) {
+        const flag = param.name.indexOf('--');
+        const name = flag === -1 ? camelcase_1.default(param.name) : camelcase_1.default(param.name.slice(flag));
+        const hasValue = options[name] && typeof options[name] !== 'function';
+        const isGitStyle = options && typeof options === 'string';
+        if (hasValue || isGitStyle) {
+            param.value = isGitStyle ? options : options[name];
         }
     }
 }

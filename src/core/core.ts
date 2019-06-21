@@ -2,6 +2,7 @@ import { AppOptions, ParamModel, CommandModel } from './../types';
 import { AppController } from './app';
 import { parseJSON, exists, appDir } from '../util/util';
 import commander from 'commander';
+import camelcase from 'camelcase';
 
 require('dotenv').config();
 
@@ -37,14 +38,14 @@ export class Core {
         if (onStart) {
             this.controller.params
                 .filter(param => param.propertyKey === onStart.lane.name)
-                .forEach(param => commander.option(`--${param.name} [var]`, param.options.description, param.value))
+                .forEach(p => this.param(commander, p))
         }
 
 
         const command = commander.parse(process.argv);
         if (command.args.length === 0) {
             if (onStart) {
-                this.parseArgs(command);
+                this.parseArgs(commander);
                 this.controller.run([onStart.lane]);
             } else {
                 this.controller.run([]);
@@ -56,14 +57,27 @@ export class Core {
     private command(cmd: CommandModel): commander.Command {
         const command = commander.command(cmd.name);
         command.alias(cmd.options.alias);
+        command.description(cmd.options.description);
         const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
-        params.forEach(param => command.option(`--${param.name} [var]`, param.options.description, param.value))
-        command.action((c: commander.Command) => {
-            this.parseArgs(c);
+        params.forEach(p => this.param(command, p))
+        command.action((options) => {
+            this.parseArgs(options);
             this.controller.run([cmd]);
         });
 
         return command;
+    }
+
+    private param(cmd: commander.Command, param: ParamModel) {
+        if (param.options.gitStyle) {
+            return cmd.option(`[${param.name}]`, param.options.description, param.value)
+        }
+        if (param.name.indexOf('--') > -1) {
+            return cmd.option(`${param.name} [var]`, param.options.description, param.value)
+        }
+        return cmd.option(`--${param.name} [var]`, param.options.description, param.value)
+
+
     }
 
     /**
@@ -74,22 +88,20 @@ export class Core {
      * @param {*} program commander.js instance
      * @memberof Core
      */
-    parseArgs(program: commander.Command) {
+    parseArgs(options) {
         this.controller.params
-            .forEach(param => this.parseArg(program, param));
+            .forEach(param => this.parseArg(options, param));
     }
 
-    private parseArg(program: commander.Command, param: ParamModel) {
-        const hasValue = program[param.name] && typeof program[param.name] !== 'function';
-        if (hasValue) {
-            param.value = program[param.name]
+    private parseArg(options: any, param: ParamModel) {
+        const flag = param.name.indexOf('--');
+        const name = flag === -1 ? camelcase(param.name) : camelcase(param.name.slice(flag));
+
+        const hasValue = options[name] && typeof options[name] !== 'function';
+        const isGitStyle = options && typeof options === 'string';
+        if (hasValue || isGitStyle) {
+            param.value = isGitStyle ? options : options[name];
         }
     }
 
 }
-
-
-
-
-
-

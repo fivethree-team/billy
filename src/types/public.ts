@@ -18,6 +18,7 @@ export interface ActionOptions {
 export interface ParamOptions {
     name: string;
     description: string;
+    gitStyle?: boolean;
     optional?: boolean;
     validators?: Validator[];
 }
