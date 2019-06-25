@@ -7,7 +7,7 @@ const app_1 = require("./app");
 const util_1 = require("../util/util");
 const commander_1 = __importDefault(require("commander"));
 const camelcase_1 = __importDefault(require("camelcase"));
-require('dotenv').config();
+require("dotenv").config();
 class Core {
     constructor() {
         this.controller = new app_1.AppController();
@@ -27,14 +27,21 @@ class Core {
             console.error(`no package.json found in ${util_1.appDir}`);
         }
         const packageJSON = util_1.parseJSON(`${util_1.appDir}/package.json`);
-        commander_1.default.version(packageJSON.version, '-v, --version');
-        config && config.allowUnknownOptions ? commander_1.default.allowUnknownOption() : false;
-        this.controller.commands
-            .forEach(command => this.command(command));
-        commander_1.default.on('command:*', () => {
-            this.controller.run([]);
+        commander_1.default.version(packageJSON.version, "-v, --version");
+        config && config.allowUnknownOptions
+            ? commander_1.default.allowUnknownOption()
+            : false;
+        const onStart = this.controller.hooks.find(hook => hook.type === "ON_START");
+        this.controller.commands.forEach(command => this.command(command));
+        commander_1.default.on("command:*", args => {
+            if (onStart) {
+                this.parseArgs(args);
+                this.controller.run([onStart.lane]);
+            }
+            else {
+                this.controller.run([]);
+            }
         });
-        const onStart = this.controller.hooks.find(hook => hook.type === 'ON_START');
         if (onStart) {
             this.controller.params
                 .filter(param => param.propertyKey === onStart.lane.name)
@@ -57,7 +64,7 @@ class Core {
         command.description(cmd.options.description);
         const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
         params.forEach(p => this.param(command, p));
-        command.action((options) => {
+        command.action(options => {
             this.parseArgs(options);
             this.controller.run([cmd]);
         });
@@ -67,7 +74,7 @@ class Core {
         if (param.options.gitStyle) {
             return cmd.option(`[${param.name}]`, param.options.description, param.value);
         }
-        if (param.name.indexOf('--') > -1) {
+        if (param.name.indexOf("--") > -1) {
             return cmd.option(`${param.name} [var]`, param.options.description, param.value);
         }
         return cmd.option(`--${param.name} [var]`, param.options.description, param.value);
@@ -81,16 +88,19 @@ class Core {
      * @memberof Core
      */
     parseArgs(options) {
-        this.controller.params
-            .forEach(param => this.parseArg(options, param));
+        this.controller.params.forEach(param => this.parseArg(options, param));
     }
     parseArg(options, param) {
-        const flag = param.name.indexOf('--');
+        const flag = param.name.indexOf("--");
         const name = flag === -1 ? camelcase_1.default(param.name) : camelcase_1.default(param.name.slice(flag));
-        const hasValue = options[name] && typeof options[name] !== 'function';
-        const isGitStyle = options && typeof options === 'string';
-        if (hasValue || isGitStyle) {
-            param.value = isGitStyle ? options : options[name];
+        if (options[name] && typeof options[name] !== "function") {
+            param.value = options[name];
+        }
+        if (options && typeof options === "string") {
+            param.value = options;
+        }
+        if (options && Array.isArray(options)) {
+            param.value = options[0];
         }
     }
 }

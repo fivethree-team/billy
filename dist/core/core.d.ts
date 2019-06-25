@@ -1,5 +1,5 @@
-import { AppOptions } from './../types';
-import { AppController } from './app';
+import { AppOptions } from "./../types";
+import { AppController } from "./app";
 export declare class Core {
     controller: AppController;
     /**
