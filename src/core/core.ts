@@ -36,6 +36,12 @@ export class Core {
 
     this.controller.commands.forEach(command => this.command(command));
 
+    if (onStart) {
+      this.controller.params
+        .filter(param => param.propertyKey === onStart.lane.name)
+        .forEach(p => this.param(commander, p));
+    }
+
     commander.on("command:*", args => {
       if (onStart) {
         this.parseArgs(args);
@@ -44,12 +50,6 @@ export class Core {
         this.controller.run([]);
       }
     });
-
-    if (onStart) {
-      this.controller.params
-        .filter(param => param.propertyKey === onStart.lane.name)
-        .forEach(p => this.param(commander, p));
-    }
 
     const command = commander.parse(process.argv);
     if (command.args.length === 0) {
@@ -69,9 +69,13 @@ export class Core {
     const params = this.controller.params.filter(
       param => param.propertyKey === cmd.name
     );
+    const gitStyle = params.find(p => p.options.gitStyle);
     params.forEach(p => this.param(command, p));
     command.action(options => {
-      this.parseArgs(options);
+      if (gitStyle && typeof options === "string") {
+        command[gitStyle.name] = options;
+      }
+      this.parseArgs(command);
       this.controller.run([cmd]);
     });
 
@@ -118,13 +122,22 @@ export class Core {
       flag === -1 ? camelcase(param.name) : camelcase(param.name.slice(flag));
 
     if (options[name] && typeof options[name] !== "function") {
-      param.value = options[name];
+      return (param.value = options[name]);
     }
+
+    if (
+      options.parent &&
+      options.parent[name] &&
+      typeof options[name] !== "function"
+    ) {
+      return (param.value = options.parent[name]);
+    }
+
     if (options && typeof options === "string") {
-      param.value = options;
+      return (param.value = options);
     }
     if (options && Array.isArray(options)) {
-      param.value = options[0];
+      return (param.value = options[0]);
     }
   }
 }

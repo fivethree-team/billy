@@ -33,6 +33,11 @@ class Core {
             : false;
         const onStart = this.controller.hooks.find(hook => hook.type === "ON_START");
         this.controller.commands.forEach(command => this.command(command));
+        if (onStart) {
+            this.controller.params
+                .filter(param => param.propertyKey === onStart.lane.name)
+                .forEach(p => this.param(commander_1.default, p));
+        }
         commander_1.default.on("command:*", args => {
             if (onStart) {
                 this.parseArgs(args);
@@ -42,11 +47,6 @@ class Core {
                 this.controller.run([]);
             }
         });
-        if (onStart) {
-            this.controller.params
-                .filter(param => param.propertyKey === onStart.lane.name)
-                .forEach(p => this.param(commander_1.default, p));
-        }
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
             if (onStart) {
@@ -63,9 +63,13 @@ class Core {
         command.alias(cmd.options.alias);
         command.description(cmd.options.description);
         const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
+        const gitStyle = params.find(p => p.options.gitStyle);
         params.forEach(p => this.param(command, p));
         command.action(options => {
-            this.parseArgs(options);
+            if (gitStyle && typeof options === "string") {
+                command[gitStyle.name] = options;
+            }
+            this.parseArgs(command);
             this.controller.run([cmd]);
         });
         return command;
@@ -94,13 +98,18 @@ class Core {
         const flag = param.name.indexOf("--");
         const name = flag === -1 ? camelcase_1.default(param.name) : camelcase_1.default(param.name.slice(flag));
         if (options[name] && typeof options[name] !== "function") {
-            param.value = options[name];
+            return (param.value = options[name]);
+        }
+        if (options.parent &&
+            options.parent[name] &&
+            typeof options[name] !== "function") {
+            return (param.value = options.parent[name]);
         }
         if (options && typeof options === "string") {
-            param.value = options;
+            return (param.value = options);
         }
         if (options && Array.isArray(options)) {
-            param.value = options[0];
+            return (param.value = options[0]);
         }
     }
 }
