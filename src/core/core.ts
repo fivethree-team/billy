@@ -118,12 +118,10 @@ export class Core {
    * @memberof Core
    */
   parseArgs(options) {
-    console.log(options);
     this.controller.params.forEach(param => this.parseArg(options, param));
   }
 
   private parseArg(options: any, param: ParamModel) {
-    console.log("parseArg", options, param);
     const flag = param.name.indexOf("--");
     const name =
       flag === -1 ? camelcase(param.name) : camelcase(param.name.slice(flag));
