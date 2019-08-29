@@ -97,11 +97,9 @@ class Core {
      * @memberof Core
      */
     parseArgs(options) {
-        console.log(options);
         this.controller.params.forEach(param => this.parseArg(options, param));
     }
     parseArg(options, param) {
-        console.log("parseArg", options, param);
         const flag = param.name.indexOf("--");
         const name = flag === -1 ? camelcase_1.default(param.name) : camelcase_1.default(param.name.slice(flag));
         if (options[name] && typeof options[name] !== "function") {
