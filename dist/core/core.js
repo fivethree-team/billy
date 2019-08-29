@@ -45,7 +45,7 @@ class Core {
                 if (gitStyle && typeof args[0] === "string") {
                     commander_1.default[gitStyle.name] = args[0];
                 }
-                this.parseArgs(Object.assign({}, commander_1.default, args));
+                this.parseArgs(Object.assign(Object.assign({}, commander_1.default), args));
                 this.controller.run([onStart.lane]);
             }
             else {
