@@ -40,7 +40,12 @@ class Core {
         }
         commander_1.default.on("command:*", args => {
             if (onStart) {
-                this.parseArgs(args);
+                // on start + no command specified
+                const gitStyle = this.controller.params.find(p => p.options.gitStyle);
+                if (gitStyle && typeof args[0] === "string") {
+                    commander_1.default[gitStyle.name] = args[0];
+                }
+                this.parseArgs(Object.assign({}, commander_1.default, args));
                 this.controller.run([onStart.lane]);
             }
             else {
@@ -63,9 +68,9 @@ class Core {
         command.alias(cmd.options.alias);
         command.description(cmd.options.description);
         const params = this.controller.params.filter(param => param.propertyKey === cmd.name);
-        const gitStyle = params.find(p => p.options.gitStyle);
         params.forEach(p => this.param(command, p));
         command.action(options => {
+            const gitStyle = params.find(p => p.options.gitStyle);
             if (gitStyle && typeof options === "string") {
                 command[gitStyle.name] = options;
             }
@@ -92,9 +97,11 @@ class Core {
      * @memberof Core
      */
     parseArgs(options) {
+        console.log(options);
         this.controller.params.forEach(param => this.parseArg(options, param));
     }
     parseArg(options, param) {
+        console.log("parseArg", options, param);
         const flag = param.name.indexOf("--");
         const name = flag === -1 ? camelcase_1.default(param.name) : camelcase_1.default(param.name.slice(flag));
         if (options[name] && typeof options[name] !== "function") {

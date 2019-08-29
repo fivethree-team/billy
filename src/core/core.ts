@@ -41,10 +41,14 @@ export class Core {
         .filter(param => param.propertyKey === onStart.lane.name)
         .forEach(p => this.param(commander, p));
     }
-
     commander.on("command:*", args => {
       if (onStart) {
-        this.parseArgs(args);
+        // on start + no command specified
+        const gitStyle = this.controller.params.find(p => p.options.gitStyle);
+        if (gitStyle && typeof args[0] === "string") {
+          commander[gitStyle.name] = args[0];
+        }
+        this.parseArgs({ ...commander, ...args });
         this.controller.run([onStart.lane]);
       } else {
         this.controller.run([]);
@@ -52,6 +56,7 @@ export class Core {
     });
 
     const command = commander.parse(process.argv);
+
     if (command.args.length === 0) {
       if (onStart) {
         this.parseArgs(commander);
@@ -69,9 +74,9 @@ export class Core {
     const params = this.controller.params.filter(
       param => param.propertyKey === cmd.name
     );
-    const gitStyle = params.find(p => p.options.gitStyle);
     params.forEach(p => this.param(command, p));
     command.action(options => {
+      const gitStyle = params.find(p => p.options.gitStyle);
       if (gitStyle && typeof options === "string") {
         command[gitStyle.name] = options;
       }
@@ -113,10 +118,12 @@ export class Core {
    * @memberof Core
    */
   parseArgs(options) {
+    console.log(options);
     this.controller.params.forEach(param => this.parseArg(options, param));
   }
 
   private parseArg(options: any, param: ParamModel) {
+    console.log("parseArg", options, param);
     const flag = param.name.indexOf("--");
     const name =
       flag === -1 ? camelcase(param.name) : camelcase(param.name.slice(flag));
