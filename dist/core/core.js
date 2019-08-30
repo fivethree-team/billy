@@ -32,33 +32,31 @@ class Core {
             ? commander_1.default.allowUnknownOption()
             : false;
         const onStart = this.controller.hooks.find(hook => hook.type === "ON_START");
-        this.controller.commands.forEach(command => this.command(command));
         if (onStart) {
-            this.controller.params
-                .filter(param => param.propertyKey === onStart.lane.name)
-                .forEach(p => this.param(commander_1.default, p));
-        }
-        commander_1.default.on("command:*", args => {
-            if (onStart) {
+            commander_1.default.on("command:*", args => {
                 // on start + no command specified
+                console.log("on start + no command specified", args);
                 const gitStyle = this.controller.params.find(p => p.options.gitStyle);
                 if (gitStyle && typeof args[0] === "string") {
                     commander_1.default[gitStyle.name] = args[0];
                 }
-                this.parseArgs(Object.assign(Object.assign({}, commander_1.default), args));
+                this.parseArgs(Object.assign({}, commander_1.default));
                 this.controller.run([onStart.lane]);
-            }
-            else {
-                this.controller.run([]);
-            }
-        });
+            });
+            // add params to root command (if any)
+            this.controller.params
+                .filter(param => param.propertyKey === onStart.lane.name)
+                .forEach(p => this.param(commander_1.default, p));
+        }
+        this.controller.commands.forEach(command => this.command(command));
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
             if (onStart) {
-                this.parseArgs(commander_1.default);
+                console.log("on start + no args");
                 this.controller.run([onStart.lane]);
             }
             else {
+                console.log("no args no on start");
                 this.controller.run([]);
             }
         }

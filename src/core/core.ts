@@ -34,34 +34,33 @@ export class Core {
       hook => hook.type === "ON_START"
     );
 
-    this.controller.commands.forEach(command => this.command(command));
-
     if (onStart) {
-      this.controller.params
-        .filter(param => param.propertyKey === onStart.lane.name)
-        .forEach(p => this.param(commander, p));
-    }
-    commander.on("command:*", args => {
-      if (onStart) {
+      commander.on("command:*", args => {
         // on start + no command specified
+        console.log("on start + no command specified", args);
         const gitStyle = this.controller.params.find(p => p.options.gitStyle);
         if (gitStyle && typeof args[0] === "string") {
           commander[gitStyle.name] = args[0];
         }
-        this.parseArgs({ ...commander, ...args });
+        this.parseArgs({ ...commander });
         this.controller.run([onStart.lane]);
-      } else {
-        this.controller.run([]);
-      }
-    });
+      });
+      // add params to root command (if any)
+      this.controller.params
+        .filter(param => param.propertyKey === onStart.lane.name)
+        .forEach(p => this.param(commander, p));
+    }
+
+    this.controller.commands.forEach(command => this.command(command));
 
     const command = commander.parse(process.argv);
 
     if (command.args.length === 0) {
       if (onStart) {
-        this.parseArgs(commander);
+        console.log("on start + no args");
         this.controller.run([onStart.lane]);
       } else {
+        console.log("no args no on start");
         this.controller.run([]);
       }
     }
