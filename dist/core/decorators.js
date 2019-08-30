@@ -26,7 +26,6 @@ exports.App = App;
  */
 function Command(options) {
     return (target, propertyKey, descriptor) => {
-        console.log("command decorator", propertyKey);
         if (typeof options === "string") {
             core.controller.commands.push({
                 name: propertyKey,

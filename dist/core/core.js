@@ -35,7 +35,6 @@ class Core {
         if (onStart) {
             commander_1.default.on("command:*", args => {
                 // on start + no command specified
-                console.log("on start + no command specified", args);
                 const gitStyle = this.controller.params.find(p => p.options.gitStyle);
                 if (gitStyle && typeof args[0] === "string") {
                     commander_1.default[gitStyle.name] = args[0];
@@ -52,17 +51,14 @@ class Core {
         const command = commander_1.default.parse(process.argv);
         if (command.args.length === 0) {
             if (onStart) {
-                console.log("on start + no args");
                 this.controller.run([onStart.lane]);
             }
             else {
-                console.log("no args no on start");
                 this.controller.run([]);
             }
         }
     }
     command(cmd) {
-        console.log("add command", cmd.name);
         const command = commander_1.default.command(cmd.name);
         command.alias(cmd.options.alias);
         command.description(cmd.options.description);
