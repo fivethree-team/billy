@@ -37,7 +37,6 @@ export class Core {
     if (onStart) {
       commander.on("command:*", args => {
         // on start + no command specified
-        console.log("on start + no command specified", args);
         const gitStyle = this.controller.params.find(p => p.options.gitStyle);
         if (gitStyle && typeof args[0] === "string") {
           commander[gitStyle.name] = args[0];
@@ -57,10 +56,8 @@ export class Core {
 
     if (command.args.length === 0) {
       if (onStart) {
-        console.log("on start + no args");
         this.controller.run([onStart.lane]);
       } else {
-        console.log("no args no on start");
         this.controller.run([]);
       }
     }

@@ -10,10 +10,8 @@ const core = new core_1.Core();
  * @returns
  */
 function App(config) {
-    return (target) => {
-        core.controller
-            .init(target, config)
-            .then(() => {
+    return target => {
+        core.controller.init(target, config).then(() => {
             core.run(config);
         });
     };
@@ -28,8 +26,12 @@ exports.App = App;
  */
 function Command(options) {
     return (target, propertyKey, descriptor) => {
-        if (typeof options === 'string') {
-            core.controller.commands.push({ name: propertyKey, options: { description: options } });
+        console.log("command decorator", propertyKey);
+        if (typeof options === "string") {
+            core.controller.commands.push({
+                name: propertyKey,
+                options: { description: options }
+            });
         }
         else {
             core.controller.commands.push({ name: propertyKey, options: options });
@@ -46,7 +48,12 @@ exports.Command = Command;
  */
 function Job(schedule) {
     return (target, propertyKey, descriptor) => {
-        const job = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null };
+        const job = {
+            name: propertyKey,
+            lane: { name: propertyKey, options: { description: null } },
+            schedule: schedule,
+            scheduler: null
+        };
         core.controller.jobs.push(job);
     };
 }
@@ -60,7 +67,10 @@ exports.Job = Job;
  */
 function Hook(hook) {
     return (target, propertyKey, descriptor) => {
-        const h = { type: hook, lane: { name: propertyKey, options: { description: hook } } };
+        const h = {
+            type: hook,
+            lane: { name: propertyKey, options: { description: hook } }
+        };
         core.controller.hooks.push(h);
     };
 }
@@ -74,7 +84,10 @@ exports.Hook = Hook;
  */
 function Webhook(path) {
     return (target, propertyKey, descriptor) => {
-        const hook = { path: path, lane: { name: propertyKey, options: { description: null } } };
+        const hook = {
+            path: path,
+            lane: { name: propertyKey, options: { description: null } }
+        };
         core.controller.webhooks.push(hook);
     };
 }
@@ -87,8 +100,7 @@ exports.Webhook = Webhook;
  * @returns
  */
 function Plugin(name) {
-    return (target) => {
-    };
+    return (target) => { };
 }
 exports.Plugin = Plugin;
 /**
@@ -100,11 +112,19 @@ exports.Plugin = Plugin;
  */
 function Action(description) {
     return (target, propertyKey, descriptor) => {
-        if (typeof description === 'string') {
-            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
+        if (typeof description === "string") {
+            core.controller.actions.push({
+                name: propertyKey,
+                plugin: target.constructor.name,
+                description: description
+            });
         }
         else {
-            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, options: description });
+            core.controller.actions.push({
+                name: propertyKey,
+                plugin: target.constructor.name,
+                options: description
+            });
         }
     };
 }
@@ -136,7 +156,10 @@ exports.param = param;
  */
 function context() {
     return (target, propertyKey, parameterIndex) => {
-        core.controller.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+        core.controller.contexts.push({
+            contextIndex: parameterIndex,
+            propertyKey: propertyKey
+        });
     };
 }
 exports.context = context;
@@ -148,7 +171,10 @@ exports.context = context;
  */
 function body() {
     return (target, propertyKey, parameterIndex) => {
-        core.controller.bodys.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+        core.controller.bodys.push({
+            contextIndex: parameterIndex,
+            propertyKey: propertyKey
+        });
     };
 }
 exports.body = body;
@@ -160,7 +186,10 @@ exports.body = body;
  */
 function error() {
     return (target, propertyKey, parameterIndex) => {
-        core.controller.errors.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
+        core.controller.errors.push({
+            contextIndex: parameterIndex,
+            propertyKey: propertyKey
+        });
     };
 }
 exports.error = error;

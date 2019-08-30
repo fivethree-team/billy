@@ -1,6 +1,13 @@
 import {
-    JobModel, HookModel, WebhookModel, ParamModel,
-    ParamOptions, AppOptions, HookName, CommandOptions, ActionOptions
+  JobModel,
+  HookModel,
+  WebhookModel,
+  ParamModel,
+  ParamOptions,
+  AppOptions,
+  HookName,
+  CommandOptions,
+  ActionOptions
 } from "../types";
 import { Core } from "./core";
 
@@ -14,13 +21,11 @@ const core = new Core();
  * @returns
  */
 export function App(config?: AppOptions) {
-    return (target) => {
-        core.controller
-            .init(target, config)
-            .then(() => {
-                core.run(config);
-            })
-    }
+  return target => {
+    core.controller.init(target, config).then(() => {
+      core.run(config);
+    });
+  };
 }
 /**
  *
@@ -30,13 +35,20 @@ export function App(config?: AppOptions) {
  * @returns
  */
 export function Command(options: string | CommandOptions) {
-    return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-        if (typeof options === 'string') {
-            core.controller.commands.push({ name: propertyKey, options: { description: options } });
-        } else {
-            core.controller.commands.push({ name: propertyKey, options: options });
-        }
+  return (
+    target: Object,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) => {
+    if (typeof options === "string") {
+      core.controller.commands.push({
+        name: propertyKey,
+        options: { description: options }
+      });
+    } else {
+      core.controller.commands.push({ name: propertyKey, options: options });
     }
+  };
 }
 
 /**
@@ -47,10 +59,19 @@ export function Command(options: string | CommandOptions) {
  * @returns
  */
 export function Job(schedule: string | any) {
-    return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const job: JobModel = { name: propertyKey, lane: { name: propertyKey, options: { description: null } }, schedule: schedule, scheduler: null }
-        core.controller.jobs.push(job);
-    }
+  return (
+    target: Object,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) => {
+    const job: JobModel = {
+      name: propertyKey,
+      lane: { name: propertyKey, options: { description: null } },
+      schedule: schedule,
+      scheduler: null
+    };
+    core.controller.jobs.push(job);
+  };
 }
 /**
  *
@@ -60,10 +81,17 @@ export function Job(schedule: string | any) {
  * @returns
  */
 export function Hook(hook: HookName) {
-    return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const h: HookModel = { type: hook, lane: { name: propertyKey, options: { description: hook } } }
-        core.controller.hooks.push(h);
-    }
+  return (
+    target: Object,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) => {
+    const h: HookModel = {
+      type: hook,
+      lane: { name: propertyKey, options: { description: hook } }
+    };
+    core.controller.hooks.push(h);
+  };
 }
 
 /**
@@ -74,10 +102,17 @@ export function Hook(hook: HookName) {
  * @returns
  */
 export function Webhook(path: string) {
-    return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const hook: WebhookModel = { path: path, lane: { name: propertyKey, options: { description: null } } }
-        core.controller.webhooks.push(hook);
-    }
+  return (
+    target: Object,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) => {
+    const hook: WebhookModel = {
+      path: path,
+      lane: { name: propertyKey, options: { description: null } }
+    };
+    core.controller.webhooks.push(hook);
+  };
 }
 
 /**
@@ -88,9 +123,7 @@ export function Webhook(path: string) {
  * @returns
  */
 export function Plugin(name: string) {
-    return (target: Function) => {
-
-    }
+  return (target: Function) => {};
 }
 /**
  *
@@ -100,13 +133,21 @@ export function Plugin(name: string) {
  * @returns
  */
 export function Action(description: string | ActionOptions) {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        if (typeof description === 'string') {
-            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, description: description });
-        } else {
-            core.controller.actions.push({ name: propertyKey, plugin: target.constructor.name, options: description });
-        }
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    if (typeof description === "string") {
+      core.controller.actions.push({
+        name: propertyKey,
+        plugin: target.constructor.name,
+        description: description
+      });
+    } else {
+      core.controller.actions.push({
+        name: propertyKey,
+        plugin: target.constructor.name,
+        options: description
+      });
     }
+  };
 }
 
 /**
@@ -117,16 +158,15 @@ export function Action(description: string | ActionOptions) {
  * @returns
  */
 export function param(options: ParamOptions) {
-    return (target: Object, propertyKey: string, parameterIndex: number) => {
-
-        const param: ParamModel = {
-            index: parameterIndex,
-            name: options.name || propertyKey,
-            propertyKey: propertyKey,
-            options: options
-        }
-        core.controller.params.push(param);
-    }
+  return (target: Object, propertyKey: string, parameterIndex: number) => {
+    const param: ParamModel = {
+      index: parameterIndex,
+      name: options.name || propertyKey,
+      propertyKey: propertyKey,
+      options: options
+    };
+    core.controller.params.push(param);
+  };
 }
 /**
  *
@@ -135,9 +175,12 @@ export function param(options: ParamOptions) {
  * @returns
  */
 export function context() {
-    return (target: Object, propertyKey: string, parameterIndex: number) => {
-        core.controller.contexts.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
-    }
+  return (target: Object, propertyKey: string, parameterIndex: number) => {
+    core.controller.contexts.push({
+      contextIndex: parameterIndex,
+      propertyKey: propertyKey
+    });
+  };
 }
 
 /**
@@ -147,9 +190,12 @@ export function context() {
  * @returns
  */
 export function body() {
-    return (target: Object, propertyKey: string, parameterIndex: number) => {
-        core.controller.bodys.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
-    }
+  return (target: Object, propertyKey: string, parameterIndex: number) => {
+    core.controller.bodys.push({
+      contextIndex: parameterIndex,
+      propertyKey: propertyKey
+    });
+  };
 }
 
 /**
@@ -159,7 +205,10 @@ export function body() {
  * @returns
  */
 export function error() {
-    return (target: Object, propertyKey: string, parameterIndex: number) => {
-        core.controller.errors.push({ contextIndex: parameterIndex, propertyKey: propertyKey });
-    }
+  return (target: Object, propertyKey: string, parameterIndex: number) => {
+    core.controller.errors.push({
+      contextIndex: parameterIndex,
+      propertyKey: propertyKey
+    });
+  };
 }

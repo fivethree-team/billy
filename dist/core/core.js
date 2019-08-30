@@ -62,6 +62,7 @@ class Core {
         }
     }
     command(cmd) {
+        console.log("add command", cmd.name);
         const command = commander_1.default.command(cmd.name);
         command.alias(cmd.options.alias);
         command.description(cmd.options.description);
